@@ -242,10 +242,15 @@ async function handleAddVendor(event) {
 async function loadProductsTable() {
     const tbody = document.getElementById('products-table-body');
     
-    if (!tbody) return;
+    if (!tbody) {
+        console.log('products-table-body element not found');
+        return;
+    }
     
     // Show loading state
     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading products...</td></tr>';
+    
+    console.log('Fetching products from Supabase...');
     
     try {
         // Fetch products from Supabase
@@ -256,12 +261,14 @@ async function loadProductsTable() {
         
         if (error) {
             console.error('Error fetching products:', error);
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading products</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading products: ' + error.message + '</td></tr>';
             return;
         }
         
+        console.log('Products fetched:', products ? products.length : 0);
+        
         if (!products || products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No products yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No products yet. Click "Add New Product" to add your first product.</td></tr>';
             return;
         }
         
@@ -280,6 +287,8 @@ async function loadProductsTable() {
                 </td>
             </tr>
         `).join('');
+        
+        console.log('Products table loaded successfully');
     } catch (error) {
         console.error('Error loading products:', error);
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading products</td></tr>';
@@ -446,6 +455,13 @@ async function handleAddProduct(event) {
     const vendorId = document.getElementById('product-vendor').value;
     const messageEl = document.getElementById('form-message');
     
+    // Validate required fields
+    if (!name || !category || !price || !stock || !unit || !unitQuantity) {
+        messageEl.textContent = 'Please fill in all required fields';
+        messageEl.className = 'form-message error';
+        return;
+    }
+    
     // Show loading message
     messageEl.textContent = 'Adding product...';
     messageEl.className = 'form-message';
@@ -468,6 +484,8 @@ async function handleAddProduct(event) {
         in_stock: stock > 0
     };
     
+    console.log('Adding product to Supabase:', newProduct);
+    
     try {
         // Insert product into Supabase
         const { data, error } = await supabase
@@ -482,11 +500,13 @@ async function handleAddProduct(event) {
             return;
         }
         
-        messageEl.textContent = 'Product added successfully!';
+        console.log('Product added successfully:', data);
+        messageEl.textContent = 'Product added successfully! Redirecting...';
         messageEl.className = 'form-message success';
         
+        // Redirect with cache busting
         setTimeout(() => {
-            window.location.href = 'admin-products.html';
+            window.location.href = 'admin-products.html?t=' + Date.now();
         }, 1500);
         
     } catch (error) {
