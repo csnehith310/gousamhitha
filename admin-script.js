@@ -23,19 +23,6 @@
 })();
 // ===== END CLEAR LOGIC =====
 
-// Supabase client getter - returns window.supabase
-const getSupabase = () => window.supabase;
-// Create a proxy to access supabase
-const supabase = new Proxy({}, {
-    get: function(target, prop) {
-        if (!window.supabase) {
-            console.error('Supabase not initialized yet!');
-            return undefined;
-        }
-        return window.supabase[prop];
-    }
-});
-
 // Initialize admin data - NO DEFAULT PRODUCTS
 function initializeAdminData() {
     // Clear old localStorage data to prevent conflicts with Supabase
@@ -94,17 +81,17 @@ function vendorLogout() {
 async function loadDashboard() {
     try {
         // Fetch products from Supabase
-        const { data: products, error: productsError } = await supabase
+        const { data: products, error: productsError } = await window.supabase
             .from('products')
             .select('*');
         
         // Fetch orders from Supabase
-        const { data: orders, error: ordersError } = await supabase
+        const { data: orders, error: ordersError } = await window.supabase
             .from('orders')
             .select('*');
         
         // Fetch vendors from Supabase
-        const { data: vendors, error: vendorsError } = await supabase
+        const { data: vendors, error: vendorsError } = await window.supabase
             .from('vendors')
             .select('*');
         
@@ -145,13 +132,13 @@ async function loadVendorsList() {
     
     try {
         // Fetch vendors from Supabase
-        const { data: vendors, error: vendorsError } = await supabase
+        const { data: vendors, error: vendorsError } = await window.supabase
             .from('vendors')
             .select('*')
             .order('created_at', { ascending: false });
         
         // Fetch products to count per vendor
-        const { data: products, error: productsError } = await supabase
+        const { data: products, error: productsError } = await window.supabase
             .from('products')
             .select('vendor_id');
         
@@ -225,7 +212,7 @@ async function handleAddVendor(event) {
     
     try {
         // Insert vendor into Supabase
-        const { data, error } = await supabase
+        const { data, error } = await window.supabase
             .from('vendors')
             .insert([newVendor])
             .select();
@@ -320,7 +307,7 @@ async function deleteProduct(id) {
     if (!confirm('Are you sure you want to delete this product?')) return;
     
     try {
-        const { error } = await supabase
+        const { error } = await window.supabase
             .from('products')
             .delete()
             .eq('id', id);
@@ -343,7 +330,7 @@ async function deleteProduct(id) {
 async function toggleStock(id) {
     try {
         // First, get the current product
-        const { data: product, error: fetchError } = await supabase
+        const { data: product, error: fetchError } = await window.supabase
             .from('products')
             .select('in_stock')
             .eq('id', id)
@@ -356,7 +343,7 @@ async function toggleStock(id) {
         }
         
         // Toggle the stock status
-        const { error: updateError } = await supabase
+        const { error: updateError } = await window.supabase
             .from('products')
             .update({ in_stock: !product.in_stock })
             .eq('id', id);
@@ -508,7 +495,7 @@ async function handleAddProduct(event) {
     
     try {
         // Insert product into Supabase
-        const { data, error } = await supabase
+        const { data, error } = await window.supabase
             .from('products')
             .insert([newProduct])
             .select();
@@ -547,7 +534,7 @@ async function loadOrdersTable() {
     
     try {
         // Fetch orders from Supabase
-        const { data: orders, error } = await supabase
+        const { data: orders, error } = await window.supabase
             .from('orders')
             .select('*, order_items(*)')
             .order('created_at', { ascending: false });
@@ -601,7 +588,7 @@ async function loadOrdersTable() {
 // Update Order Status in Supabase
 async function updateOrderStatus(orderId, newStatus) {
     try {
-        const { error } = await supabase
+        const { error } = await window.supabase
             .from('orders')
             .update({ status: newStatus })
             .eq('id', orderId);
@@ -624,7 +611,7 @@ async function updateOrderStatus(orderId, newStatus) {
 async function deleteOrder(orderId) {
     try {
         // First check if order is delivered
-        const { data: order, error: fetchError } = await supabase
+        const { data: order, error: fetchError } = await window.supabase
             .from('orders')
             .select('status')
             .eq('id', orderId)
@@ -641,7 +628,7 @@ async function deleteOrder(orderId) {
         }
         
         if (confirm(`Are you sure you want to delete order ${orderId}?`)) {
-            const { error } = await supabase
+            const { error } = await window.supabase
                 .from('orders')
                 .delete()
                 .eq('id', orderId);
@@ -737,7 +724,7 @@ async function initializeCategories() {
 // Get categories from Supabase
 async function getCategories() {
     try {
-        const { data: categories, error } = await supabase
+        const { data: categories, error } = await window.supabase
             .from('categories')
             .select('name')
             .order('name');
@@ -816,7 +803,7 @@ async function addCategory() {
     
     try {
         // Check if category already exists
-        const { data: existing } = await supabase
+        const { data: existing } = await window.supabase
             .from('categories')
             .select('name')
             .eq('name', newCategory)
@@ -828,7 +815,7 @@ async function addCategory() {
         }
         
         // Add new category
-        const { error } = await supabase
+        const { error } = await window.supabase
             .from('categories')
             .insert([{ name: newCategory }]);
         
@@ -860,7 +847,7 @@ async function deleteCategory(categoryName) {
     }
     
     try {
-        const { error } = await supabase
+        const { error } = await window.supabase
             .from('categories')
             .delete()
             .eq('name', categoryName);
@@ -1387,13 +1374,13 @@ async function loadVendorsTable() {
     
     try {
         // Fetch vendors from Supabase
-        const { data: vendors, error: vendorsError } = await supabase
+        const { data: vendors, error: vendorsError } = await window.supabase
             .from('vendors')
             .select('*')
             .order('created_at', { ascending: false });
         
         // Fetch products to count per vendor
-        const { data: products, error: productsError } = await supabase
+        const { data: products, error: productsError } = await window.supabase
             .from('products')
             .select('vendor_id');
         
@@ -1450,7 +1437,7 @@ function closeVendorPanel() {
 // Edit vendor - Load from Supabase
 async function editVendor(id) {
     try {
-        const { data: vendor, error } = await supabase
+        const { data: vendor, error } = await window.supabase
             .from('vendors')
             .select('*')
             .eq('id', id)
@@ -1493,7 +1480,7 @@ async function saveVendor(event) {
     try {
         if (vendorId) {
             // Edit existing vendor
-            const { error } = await supabase
+            const { error } = await window.supabase
                 .from('vendors')
                 .update({
                     vendor_name: vendorName,
@@ -1506,7 +1493,7 @@ async function saveVendor(event) {
             if (error) throw error;
         } else {
             // Add new vendor
-            const { error } = await supabase
+            const { error } = await window.supabase
                 .from('vendors')
                 .insert([{
                     vendor_name: vendorName,
@@ -1537,7 +1524,7 @@ async function deleteVendor(id) {
     if (!confirm('Are you sure you want to delete this vendor? All their products will remain but will be unassigned.')) return;
     
     try {
-        const { error } = await supabase
+        const { error } = await window.supabase
             .from('vendors')
             .delete()
             .eq('id', id);
@@ -1567,7 +1554,7 @@ async function loadVendorsDropdown() {
     console.log('Loading vendors dropdown...');
     
     try {
-        const { data: vendors, error } = await supabase
+        const { data: vendors, error } = await window.supabase
             .from('vendors')
             .select('*')
             .order('vendor_name');
@@ -1946,3 +1933,4 @@ document.addEventListener('DOMContentLoaded', function() {
         loadCategoryOptions();
     }
 });
+
