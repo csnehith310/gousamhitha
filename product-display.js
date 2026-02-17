@@ -9,7 +9,7 @@ async function loadProductsWithVendors() {
     if (!targetGrid) return;
     targetGrid.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Loading products...</div>';
     try {
-        const { data: products, error } = await supabase
+        const { data: products, error } = await window.supabase
             .from('products')
             .select('*')
             .order('created_at', { ascending: false });
@@ -48,7 +48,7 @@ async function loadProductsWithVendors() {
             }
         }
         const displayProducts = homeProductGrid ? products.slice(0, 4) : filteredProducts;
-        const { data: vendors } = await supabase
+        const { data: vendors } = await window.supabase
             .from('vendors')
             .select('*');
         targetGrid.innerHTML = displayProducts.map(product => {
@@ -123,7 +123,7 @@ function decreaseQuantity(productId) {
 function addToCartWithQuantity(productId) {
     const qtyInput = document.getElementById(`qty-${productId}`);
     const quantity = qtyInput ? parseInt(qtyInput.value) : 1;
-    supabase
+    window.supabase
         .from('products')
         .select('*')
         .eq('id', productId)
