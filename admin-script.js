@@ -126,29 +126,56 @@ async function loadDashboard() {
     }
 }
 
-// Load vendors list in dashboard
-function loadVendorsList() {
-    const vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    const products = JSON.parse(localStorage.getItem('products')) || [];
+// Load vendors list in dashboard from Supabase
+async function loadVendorsList() {
     const tbody = document.getElementById('vendors-list-body');
     
     if (!tbody) return;
     
-    tbody.innerHTML = vendors.map(vendor => {
-        const vendorProducts = products.filter(p => p.vendorId === vendor.id);
-        const createdDate = vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString() : 'N/A';
+    try {
+        // Fetch vendors from Supabase
+        const { data: vendors, error: vendorsError } = await supabase
+            .from('vendors')
+            .select('*')
+            .order('created_at', { ascending: false });
         
-        return `
-            <tr>
-                <td>${vendor.vendorName}</td>
-                <td>${vendor.businessName}</td>
-                <td>${vendor.phone || 'N/A'}</td>
-                <td><span class="status-badge in-stock">${vendor.status || 'active'}</span></td>
-                <td>${vendorProducts.length}</td>
-                <td>${createdDate}</td>
-            </tr>
-        `;
-    }).join('') || '<tr><td colspan="6">No vendors yet</td></tr>';
+        // Fetch products to count per vendor
+        const { data: products, error: productsError } = await supabase
+            .from('products')
+            .select('vendor_id');
+        
+        if (vendorsError) {
+            console.error('Error fetching vendors:', vendorsError);
+            tbody.innerHTML = '<tr><td colspan="6">Error loading vendors</td></tr>';
+            return;
+        }
+        
+        if (!vendors || vendors.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">No vendors yet</td></tr>';
+            return;
+        }
+        
+        const productsList = products || [];
+        
+        tbody.innerHTML = vendors.map(vendor => {
+            const vendorProducts = productsList.filter(p => p.vendor_id === vendor.id);
+            const createdDate = vendor.created_at ? new Date(vendor.created_at).toLocaleDateString() : 'N/A';
+            
+            return `
+                <tr>
+                    <td>${vendor.vendor_name}</td>
+                    <td>${vendor.business_name}</td>
+                    <td>${vendor.phone || 'N/A'}</td>
+                    <td><span class="status-badge in-stock">active</span></td>
+                    <td>${vendorProducts.length}</td>
+                    <td>${createdDate}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading vendors:', error);
+        tbody.innerHTML = '<tr><td colspan="6">Error loading vendors</td></tr>';
+    }
 }
 
 // Open add vendor modal
@@ -164,8 +191,8 @@ function closeAddVendorModal() {
     document.getElementById('add-vendor-message').className = 'form-message';
 }
 
-// Handle add vendor (Supplier record only - no user account)
-function handleAddVendor(event) {
+// Handle add vendor - Save to Supabase
+async function handleAddVendor(event) {
     event.preventDefault();
     
     const vendorName = document.getElementById('new-vendor-name').value;
@@ -174,31 +201,43 @@ function handleAddVendor(event) {
     const address = document.getElementById('new-vendor-address').value;
     const messageEl = document.getElementById('add-vendor-message');
     
-    // Create vendor record (supplier only)
-    const vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    const newVendorId = vendors.length > 0 ? Math.max(...vendors.map(v => v.id)) + 1 : 1;
+    // Show loading message
+    messageEl.textContent = 'Creating vendor...';
+    messageEl.className = 'form-message';
     
     const newVendor = {
-        id: newVendorId,
-        vendorName: vendorName,
-        businessName: businessName,
+        vendor_name: vendorName,
+        business_name: businessName,
         phone: phone || '',
-        address: address || '',
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        address: address || ''
     };
     
-    vendors.push(newVendor);
-    localStorage.setItem('vendors', JSON.stringify(vendors));
-    
-    messageEl.textContent = 'Vendor created successfully!';
-    messageEl.className = 'form-message success';
-    
-    setTimeout(() => {
-        closeAddVendorModal();
-        loadDashboard();
-    }, 1500);
+    try {
+        // Insert vendor into Supabase
+        const { data, error } = await supabase
+            .from('vendors')
+            .insert([newVendor])
+            .select();
+        
+        if (error) {
+            console.error('Error adding vendor:', error);
+            messageEl.textContent = 'Error adding vendor: ' + error.message;
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        messageEl.textContent = 'Vendor created successfully!';
+        messageEl.className = 'form-message success';
+        
+        setTimeout(() => {
+            closeAddVendorModal();
+            loadDashboard();
+        }, 1500);
+    } catch (error) {
+        console.error('Error adding vendor:', error);
+        messageEl.textContent = 'Error adding vendor. Please try again.';
+        messageEl.className = 'form-message error';
+    }
 }
 
 // Load Products Table from Supabase
@@ -1178,31 +1217,61 @@ function updateVendorDeliveryStatus(orderId, status) {
     }
 }
 
-// ===== ADMIN VENDOR MANAGEMENT =====
-function loadVendorsTable() {
-    const vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    const products = JSON.parse(localStorage.getItem('products')) || [];
+// Load vendors table from Supabase
+async function loadVendorsTable() {
     const tbody = document.getElementById('vendors-table-body');
     
     if (!tbody) return;
     
-    tbody.innerHTML = vendors.map(vendor => {
-        const vendorProductCount = products.filter(p => p.vendor_id === vendor.id).length;
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading vendors...</td></tr>';
+    
+    try {
+        // Fetch vendors from Supabase
+        const { data: vendors, error: vendorsError } = await supabase
+            .from('vendors')
+            .select('*')
+            .order('created_at', { ascending: false });
         
-        return `
-        <tr>
-            <td>${vendor.id}</td>
-            <td>${vendor.name}</td>
-            <td>${vendor.email}</td>
-            <td>${vendor.phone}</td>
-            <td>${vendorProductCount}</td>
-            <td><span class="status-badge in-stock">${vendor.status || 'active'}</span></td>
-            <td>
-                <button class="action-btn btn-edit" onclick="editVendor(${vendor.id})">Edit</button>
-                <button class="action-btn btn-delete" onclick="deleteVendor(${vendor.id})">Delete</button>
-            </td>
-        </tr>
-    `}).join('') || '<tr><td colspan="7">No vendors yet</td></tr>';
+        // Fetch products to count per vendor
+        const { data: products, error: productsError } = await supabase
+            .from('products')
+            .select('vendor_id');
+        
+        if (vendorsError) {
+            console.error('Error fetching vendors:', vendorsError);
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading vendors</td></tr>';
+            return;
+        }
+        
+        if (!vendors || vendors.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No vendors yet</td></tr>';
+            return;
+        }
+        
+        const productsList = products || [];
+        
+        tbody.innerHTML = vendors.map(vendor => {
+            const vendorProductCount = productsList.filter(p => p.vendor_id === vendor.id).length;
+            
+            return `
+            <tr>
+                <td>${vendor.id.substring(0, 8)}...</td>
+                <td>${vendor.vendor_name}</td>
+                <td>${vendor.business_name}</td>
+                <td>${vendor.phone || 'N/A'}</td>
+                <td>${vendor.address || 'N/A'}</td>
+                <td><span class="status-badge in-stock">active</span></td>
+                <td>
+                    <button class="action-btn btn-edit" onclick="editVendor('${vendor.id}')">Edit</button>
+                    <button class="action-btn btn-delete" onclick="deleteVendor('${vendor.id}')">Delete</button>
+                </td>
+            </tr>
+        `}).join('');
+    } catch (error) {
+        console.error('Error loading vendors:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading vendors</td></tr>';
+    }
 }
 
 // Open add vendor panel
@@ -1219,80 +1288,113 @@ function closeVendorPanel() {
     document.getElementById('vendor-form').reset();
 }
 
-// Edit vendor
-function editVendor(id) {
-    const vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    const vendor = vendors.find(v => v.id === id);
-    
-    if (vendor) {
+// Edit vendor - Load from Supabase
+async function editVendor(id) {
+    try {
+        const { data: vendor, error } = await supabase
+            .from('vendors')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (error || !vendor) {
+            alert('Error loading vendor details');
+            return;
+        }
+        
         document.getElementById('vendor-panel-title').textContent = 'Edit Vendor';
         document.getElementById('vendor-id').value = vendor.id;
-        document.getElementById('vendor-name').value = vendor.name;
-        document.getElementById('vendor-email').value = vendor.email;
-        document.getElementById('vendor-password').value = vendor.password;
-        document.getElementById('vendor-phone').value = vendor.phone;
+        document.getElementById('vendor-name').value = vendor.vendor_name;
+        document.getElementById('business-name').value = vendor.business_name;
+        document.getElementById('vendor-phone').value = vendor.phone || '';
+        document.getElementById('vendor-address').value = vendor.address || '';
+        document.getElementById('vendor-status').value = 'active';
         document.getElementById('vendor-panel').classList.add('active');
+    } catch (error) {
+        console.error('Error loading vendor:', error);
+        alert('Error loading vendor details');
     }
 }
 
-// Save vendor
-function saveVendor(event) {
+// Save vendor to Supabase
+async function saveVendor(event) {
     event.preventDefault();
     
     const vendorId = document.getElementById('vendor-id').value;
-    const name = document.getElementById('vendor-name').value;
-    const email = document.getElementById('vendor-email').value;
-    const password = document.getElementById('vendor-password').value;
+    const vendorName = document.getElementById('vendor-name').value;
+    const businessName = document.getElementById('business-name').value;
     const phone = document.getElementById('vendor-phone').value;
+    const address = document.getElementById('vendor-address').value;
+    const status = document.getElementById('vendor-status').value;
     const messageEl = document.getElementById('vendor-form-message');
     
-    let vendors = JSON.parse(localStorage.getItem('vendors')) || [];
+    messageEl.textContent = 'Saving vendor...';
+    messageEl.className = 'form-message';
     
-    if (vendorId) {
-        // Edit existing vendor
-        const index = vendors.findIndex(v => v.id === parseInt(vendorId));
-        if (index !== -1) {
-            vendors[index] = {
-                ...vendors[index],
-                name,
-                email,
-                password,
-                phone
-            };
+    try {
+        if (vendorId) {
+            // Edit existing vendor
+            const { error } = await supabase
+                .from('vendors')
+                .update({
+                    vendor_name: vendorName,
+                    business_name: businessName,
+                    phone: phone || '',
+                    address: address || ''
+                })
+                .eq('id', vendorId);
+            
+            if (error) throw error;
+        } else {
+            // Add new vendor
+            const { error } = await supabase
+                .from('vendors')
+                .insert([{
+                    vendor_name: vendorName,
+                    business_name: businessName,
+                    phone: phone || '',
+                    address: address || ''
+                }]);
+            
+            if (error) throw error;
         }
-    } else {
-        // Add new vendor
-        const newId = vendors.length > 0 ? Math.max(...vendors.map(v => v.id)) + 1 : 1;
-        const newVendor = {
-            id: newId,
-            name,
-            email,
-            password,
-            phone,
-            status: 'active'
-        };
-        vendors.push(newVendor);
+        
+        messageEl.textContent = 'Vendor saved successfully!';
+        messageEl.className = 'form-message success';
+        
+        setTimeout(() => {
+            closeVendorPanel();
+            loadVendorsTable();
+        }, 1000);
+    } catch (error) {
+        console.error('Error saving vendor:', error);
+        messageEl.textContent = 'Error saving vendor: ' + error.message;
+        messageEl.className = 'form-message error';
     }
-    
-    localStorage.setItem('vendors', JSON.stringify(vendors));
-    
-    messageEl.textContent = 'Vendor saved successfully!';
-    messageEl.className = 'form-message success';
-    
-    setTimeout(() => {
-        closeVendorPanel();
-        loadVendorsTable();
-    }, 1000);
 }
 
-// Delete vendor
-function deleteVendor(id) {
+// Delete vendor from Supabase
+async function deleteVendor(id) {
     if (!confirm('Are you sure you want to delete this vendor? All their products will remain but will be unassigned.')) return;
     
-    let vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    vendors = vendors.filter(v => v.id !== id);
-    localStorage.setItem('vendors', JSON.stringify(vendors));
-    loadVendorsTable();
+    try {
+        const { error } = await supabase
+            .from('vendors')
+            .delete()
+            .eq('id', id);
+        
+        if (error) {
+            console.error('Error deleting vendor:', error);
+            alert('Error deleting vendor: ' + error.message);
+            return;
+        }
+        
+        alert('Vendor deleted successfully!');
+        loadVendorsTable();
+    } catch (error) {
+        console.error('Error deleting vendor:', error);
+        alert('Error deleting vendor. Please try again.');
+    }
 }
 
 // Load vendors dropdown from Supabase
