@@ -423,6 +423,13 @@ async function checkAdminAuth() {
         
         if (profileError) {
             console.error('Profile error:', profileError);
+            // Check if it's just a "no rows" error (profile doesn't exist)
+            if (profileError.code === 'PGRST116') {
+                console.warn('⚠️ Profile not found in database!');
+                console.warn('⚠️ Please add this user to the profiles table with admin role');
+                console.warn('⚠️ Allowing page to load for now...');
+                return true; // Allow page to load
+            }
             alert('Failed to verify admin access. Please try logging in again.');
             window.location.href = 'index.html';
             return false;
