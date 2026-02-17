@@ -19,12 +19,13 @@ CREATE TABLE profiles (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE vendors (
+CREATE TABLE IF NOT EXISTS vendors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     vendor_name TEXT NOT NULL,
     business_name TEXT NOT NULL,
     email TEXT,
     phone TEXT,
+    address TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

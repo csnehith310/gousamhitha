@@ -57,6 +57,9 @@ ALTER TABLE categories DISABLE ROW LEVEL SECURITY;
 ALTER TABLE orders DISABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items DISABLE ROW LEVEL SECURITY;
 
+-- Make vendor email optional (nullable)
+ALTER TABLE vendors ALTER COLUMN email DROP NOT NULL;
+
 -- Verify the migration
 SELECT 
     column_name, 
