@@ -1,4 +1,4 @@
-/* ====================================================
+﻿/* ====================================================
    EMPTY STATES - CB ORGANIC STORE
    ==================================================== */
 
@@ -40,7 +40,7 @@
     font-size: 1rem;
 }
 
-/* Specific Empty States */
+
 .empty-products {
     background: #f9f9f9;
     border-radius: 8px;
@@ -57,7 +57,7 @@
     border-radius: 8px;
 }
 
-/* Loading States */
+
 .loading-state {
     display: flex;
     flex-direction: column;
@@ -87,7 +87,7 @@
     color: #666;
 }
 
-/* Product Grid Empty State */
+
 .product-grid.empty {
     grid-template-columns: 1fr;
 }
@@ -96,7 +96,7 @@
     grid-column: 1;
 }
 
-/* Order List Empty State */
+
 .order-list.empty {
     display: block;
 }

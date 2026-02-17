@@ -1,15 +1,15 @@
--- ====================================================
--- CB ORGANIC STORE - SUPABASE DATABASE SCHEMA
--- ====================================================
--- Run this in Supabase SQL Editor
--- ====================================================
+﻿
 
--- Enable UUID extension
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ====================================================
--- TABLE: users
--- ====================================================
+
+
+
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -23,9 +23,9 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: vendors
--- ====================================================
+
+
+
 CREATE TABLE vendors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     vendor_name VARCHAR(255) NOT NULL,
@@ -37,9 +37,9 @@ CREATE TABLE vendors (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: categories
--- ====================================================
+
+
+
 CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) UNIQUE NOT NULL,
@@ -52,9 +52,9 @@ CREATE TABLE categories (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: products
--- ====================================================
+
+
+
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE,
@@ -77,9 +77,9 @@ CREATE TABLE products (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: orders
--- ====================================================
+
+
+
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_number VARCHAR(50) UNIQUE NOT NULL,
@@ -100,9 +100,9 @@ CREATE TABLE orders (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: order_items
--- ====================================================
+
+
+
 CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
@@ -117,9 +117,9 @@ CREATE TABLE order_items (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: cart
--- ====================================================
+
+
+
 CREATE TABLE cart (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -130,9 +130,9 @@ CREATE TABLE cart (
     UNIQUE(user_id, product_id)
 );
 
--- ====================================================
--- TABLE: addresses
--- ====================================================
+
+
+
 CREATE TABLE addresses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -150,9 +150,9 @@ CREATE TABLE addresses (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: inventory_log
--- ====================================================
+
+
+
 CREATE TABLE inventory_log (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -167,9 +167,9 @@ CREATE TABLE inventory_log (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- TABLE: donations
--- ====================================================
+
+
+
 CREATE TABLE donations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     donor_name VARCHAR(255) NOT NULL,
@@ -182,9 +182,9 @@ CREATE TABLE donations (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- ====================================================
--- INDEXES
--- ====================================================
+
+
+
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_products_vendor_id ON products(vendor_id);
@@ -196,52 +196,52 @@ CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_vendor_id ON order_items(vendor_id);
 CREATE INDEX idx_cart_user_id ON cart(user_id);
 
--- ====================================================
--- SAMPLE DATA
--- ====================================================
 
--- Insert Admin User (password: Saireddy880227)
--- Note: In production, use properly hashed passwords with bcrypt
+
+
+
+
+
 INSERT INTO users (email, password, first_name, last_name, role) 
 VALUES ('ruthvik@blockfortrust.com', '$2b$10$rKZLvVZjKqX8YqVqYqVqYeX8YqVqYqVqYqVqYqVqYqVqYqVqYqVqY', 'Ruthvik', 'Admin', 'admin');
 
--- Insert Sample Vendors (Supplier Records)
+
 INSERT INTO vendors (vendor_name, business_name, phone, address, status) 
 VALUES 
 ('CB Organic Farm', 'CB Organic Farm Pvt Ltd', '9876543210', 'Village Road, Organic Farm Area', 'active'),
 ('Fresh Dairy Co', 'Fresh Dairy Cooperative', '9876543211', 'Dairy Lane, Farm District', 'active');
 
--- Insert Sample Category
+
 INSERT INTO categories (name, slug, description) 
 VALUES 
 ('Dairy Products', 'dairy-products', 'Fresh organic dairy products from desi cows'),
 ('Cow Products', 'cow-products', 'Natural cow-based products'),
 ('Organic Products', 'organic-products', 'Chemical-free organic products');
 
--- ====================================================
--- STORAGE BUCKETS SETUP
--- ====================================================
--- Run these commands in Supabase Dashboard > Storage
--- Or use Supabase CLI
 
--- Bucket: product-images (public)
--- Bucket: vendor-documents (private)
--- Bucket: profile-images (public)
--- Bucket: category-images (public)
 
--- ====================================================
--- RLS POLICIES (Disabled for prototype)
--- ====================================================
--- For production, enable RLS and create policies
--- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
--- etc.
 
--- ====================================================
--- FUNCTIONS
--- ====================================================
 
--- Function to update updated_at timestamp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -250,7 +250,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Triggers for updated_at
+
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_vendors_updated_at BEFORE UPDATE ON vendors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -258,11 +258,11 @@ CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_addresses_updated_at BEFORE UPDATE ON addresses FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- ====================================================
--- VIEWS
--- ====================================================
 
--- View: Product details with vendor info
+
+
+
+
 CREATE OR REPLACE VIEW product_details AS
 SELECT 
     p.*,
@@ -273,7 +273,7 @@ FROM products p
 LEFT JOIN vendors v ON p.vendor_id = v.id
 LEFT JOIN categories c ON p.category_id = c.id;
 
--- View: Order details with items
+
 CREATE OR REPLACE VIEW order_summary AS
 SELECT 
     o.*,
@@ -284,6 +284,6 @@ LEFT JOIN order_items oi ON o.id = oi.order_id
 LEFT JOIN users u ON o.customer_id = u.id
 GROUP BY o.id, u.email;
 
--- ====================================================
--- COMPLETED
--- ====================================================
+
+
+

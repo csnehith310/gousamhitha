@@ -1,61 +1,40 @@
-// ====================================================
-// GOOGLE AUTHENTICATION - DIRECT IMPLEMENTATION
-// ====================================================
-// Uses your own backend for OAuth (shows gousamhitha.com)
-// ====================================================
+﻿
 
-// Configuration
+
+
+
+
 const GOOGLE_CONFIG = {
     clientId: '488030012275-q24mqkugm2l0t6hgbc0uvd5lf0lj155q.apps.googleusercontent.com',
-    redirectUri: 'https://gousamhitha.com/auth/google/callback',
+    redirectUri: 'https:
     scope: 'openid email profile',
     responseType: 'code',
-    authEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth'
+    authEndpoint: 'https:
 };
+const API_BASE_URL = 'http:
 
-const API_BASE_URL = 'http://localhost:5000/api';
 
-// ====================================================
-// GOOGLE SIGN IN
-// ====================================================
 
 function handleGoogleSignIn() {
     console.log('Initiating Google Sign In...');
-    
-    // Build Google OAuth URL
     const authUrl = buildGoogleAuthUrl('signin');
-    
-    // Store the action type for callback handling
     localStorage.setItem('googleAuthAction', 'signin');
-    
-    // Redirect to Google OAuth
     window.location.href = authUrl;
 }
 
-// ====================================================
-// GOOGLE SIGN UP
-// ====================================================
+
 
 function handleGoogleSignUp() {
     console.log('Initiating Google Sign Up...');
-    
-    // Build Google OAuth URL
     const authUrl = buildGoogleAuthUrl('signup');
-    
-    // Store the action type for callback handling
     localStorage.setItem('googleAuthAction', 'signup');
-    
-    // Redirect to Google OAuth
     window.location.href = authUrl;
 }
 
-// ====================================================
-// BUILD GOOGLE AUTH URL
-// ====================================================
+
 
 function buildGoogleAuthUrl(action) {
     const state = generateRandomState();
-    
     const params = new URLSearchParams({
         client_id: GOOGLE_CONFIG.clientId,
         redirect_uri: GOOGLE_CONFIG.redirectUri,
@@ -65,20 +44,16 @@ function buildGoogleAuthUrl(action) {
         prompt: action === 'signup' ? 'consent' : 'select_account',
         state: state
     });
-    
     return `${GOOGLE_CONFIG.authEndpoint}?${params.toString()}`;
 }
 
-// ====================================================
-// HANDLE GOOGLE CALLBACK
-// ====================================================
+
 
 async function handleGoogleCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
     const error = urlParams.get('error');
-    
     if (error) {
         console.error('Google OAuth error:', error);
         showMessage('Google authentication failed. Please try again.', 'error');
@@ -87,13 +62,10 @@ async function handleGoogleCallback() {
         }, 2000);
         return;
     }
-    
     if (!code) {
         console.error('No authorization code received');
         return;
     }
-    
-    // Verify state to prevent CSRF attacks
     const savedState = localStorage.getItem('googleAuthState');
     if (state !== savedState) {
         console.error('State mismatch - possible CSRF attack');
@@ -103,27 +75,17 @@ async function handleGoogleCallback() {
         }, 2000);
         return;
     }
-    
     try {
-        // Show loading message
         showMessage('Completing sign in...', 'info');
-        
-        // Exchange code for tokens and user info
         const userInfo = await exchangeCodeForUserInfo(code);
-        
-        // Get the action (signin or signup)
         const action = localStorage.getItem('googleAuthAction') || 'signin';
-        
         if (action === 'signup') {
             await handleGoogleSignUpComplete(userInfo);
         } else {
             await handleGoogleSignInComplete(userInfo);
         }
-        
-        // Clean up
         localStorage.removeItem('googleAuthAction');
         localStorage.removeItem('googleAuthState');
-        
     } catch (error) {
         console.error('Google authentication error:', error);
         showMessage('Authentication failed. Please try again.', 'error');
@@ -133,9 +95,7 @@ async function handleGoogleCallback() {
     }
 }
 
-// ====================================================
-// EXCHANGE CODE FOR USER INFO
-// ====================================================
+
 
 async function exchangeCodeForUserInfo(code) {
     const response = await fetch(`${API_BASE_URL}/auth/google`, {
@@ -145,22 +105,17 @@ async function exchangeCodeForUserInfo(code) {
         },
         body: JSON.stringify({ code })
     });
-    
     if (!response.ok) {
         throw new Error('Failed to exchange code for user info');
     }
-    
     const data = await response.json();
     return data.user;
 }
 
-// ====================================================
-// COMPLETE GOOGLE SIGN IN
-// ====================================================
+
 
 async function handleGoogleSignInComplete(userInfo) {
     console.log('Completing Google Sign In for:', userInfo.email);
-    
     const response = await fetch(`${API_BASE_URL}/auth/google/signin`, {
         method: 'POST',
         headers: {
@@ -173,18 +128,12 @@ async function handleGoogleSignInComplete(userInfo) {
             picture: userInfo.picture
         })
     });
-    
     const data = await response.json();
-    
     if (data.success) {
-        // Store user session
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         localStorage.setItem('userRole', data.user.role);
-        
         showMessage('Signed in successfully with Google!', 'success');
-        
-        // Redirect based on role
         setTimeout(() => {
             if (data.user.role === 'admin') {
                 window.location.href = '/admin-dashboard.html';
@@ -197,13 +146,10 @@ async function handleGoogleSignInComplete(userInfo) {
     }
 }
 
-// ====================================================
-// COMPLETE GOOGLE SIGN UP
-// ====================================================
+
 
 async function handleGoogleSignUpComplete(userInfo) {
     console.log('Completing Google Sign Up for:', userInfo.email);
-    
     const response = await fetch(`${API_BASE_URL}/auth/google/signup`, {
         method: 'POST',
         headers: {
@@ -216,18 +162,12 @@ async function handleGoogleSignUpComplete(userInfo) {
             picture: userInfo.picture
         })
     });
-    
     const data = await response.json();
-    
     if (data.success) {
-        // Store user session
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         localStorage.setItem('userRole', 'customer');
-        
         showMessage('Account created successfully with Google!', 'success');
-        
-        // Redirect to home
         setTimeout(() => {
             window.location.href = '/index.html';
         }, 1000);
@@ -236,9 +176,7 @@ async function handleGoogleSignUpComplete(userInfo) {
     }
 }
 
-// ====================================================
-// HELPER FUNCTIONS
-// ====================================================
+
 
 function generateRandomState() {
     const state = Math.random().toString(36).substring(2, 15) + 
@@ -246,7 +184,6 @@ function generateRandomState() {
     localStorage.setItem('googleAuthState', state);
     return state;
 }
-
 function showMessage(message, type) {
     const messageDiv = document.createElement('div');
     messageDiv.textContent = message;
@@ -261,18 +198,13 @@ function showMessage(message, type) {
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         z-index: 10000;
     `;
-    
     document.body.appendChild(messageDiv);
-    
     setTimeout(() => messageDiv.remove(), 3000);
 }
 
-// ====================================================
-// INITIALIZE ON PAGE LOAD
-// ====================================================
+
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if this is a Google OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('code') && urlParams.has('state')) {
         handleGoogleCallback();

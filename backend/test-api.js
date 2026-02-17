@@ -1,10 +1,7 @@
-// Simple test script to verify API endpoints
-const API_BASE_URL = 'http://localhost:5000/api';
-
+﻿
+const API_BASE_URL = 'http:
 async function testAPI() {
     console.log('Testing CB Organic API...\n');
-
-    // Test 1: Get Categories
     try {
         console.log('1. Testing GET /api/categories');
         const response = await fetch(`${API_BASE_URL}/categories`);
@@ -13,8 +10,6 @@ async function testAPI() {
     } catch (error) {
         console.log('✗ Categories failed:', error.message);
     }
-
-    // Test 2: Get Products
     try {
         console.log('\n2. Testing GET /api/products');
         const response = await fetch(`${API_BASE_URL}/products`);
@@ -23,8 +18,6 @@ async function testAPI() {
     } catch (error) {
         console.log('✗ Products failed:', error.message);
     }
-
-    // Test 3: Get Orders
     try {
         console.log('\n3. Testing GET /api/orders');
         const response = await fetch(`${API_BASE_URL}/orders`);
@@ -33,8 +26,6 @@ async function testAPI() {
     } catch (error) {
         console.log('✗ Orders failed:', error.message);
     }
-
-    // Test 4: Get Vendors
     try {
         console.log('\n4. Testing GET /api/vendors');
         const response = await fetch(`${API_BASE_URL}/vendors`);
@@ -43,9 +34,7 @@ async function testAPI() {
     } catch (error) {
         console.log('✗ Vendors failed:', error.message);
     }
-
     console.log('\n✓ API tests complete!');
 }
 
-// Run tests
 testAPI();

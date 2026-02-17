@@ -1,16 +1,10 @@
-// ===== TEMPORARY RESET LOGIC - REMOVE MILK AND CURD PRODUCTS =====
-// This will force clear old product data and reinitialize without milk/curd
+﻿
+
 (function() {
     const RESET_FLAG = 'products_reset_v2';
-    
-    // Check if reset has already been done
     if (!localStorage.getItem(RESET_FLAG)) {
         console.log('Resetting products - removing milk and curd...');
-        
-        // Clear old product data
         localStorage.removeItem('products');
-        
-        // Set correct products without milk (id:2) and curd (id:6)
         const correctProducts = [
             { id: 1, name: "Premium A2 Ghee", category: "Bakery & Dairy", subcategory: "Ghee", price: 899, stock: 50, image: "images/ghee.png", description: "Pure A2 cow ghee", inStock: true },
             { id: 3, name: "Gomutra Ark", category: "Conscious Living", subcategory: "Herbal Products", price: 299, stock: 30, image: "images/gomutra.png", description: "Traditional wellness", inStock: true },
@@ -20,21 +14,15 @@
             { id: 8, name: "Fresh Paneer", category: "Bakery & Dairy", subcategory: "Paneer", price: 350, stock: 40, image: "images/paneer.png", description: "Fresh paneer", inStock: true },
             { id: 9, name: "Pure Gomutra", category: "Conscious Living", subcategory: "Herbal Products", price: 150, stock: 20, image: "images/gomutra.png", description: "Pure wellness", inStock: true }
         ];
-        
         localStorage.setItem('products', JSON.stringify(correctProducts));
-        
-        // Mark reset as complete
         localStorage.setItem(RESET_FLAG, 'true');
-        
         console.log('Products reset complete. Milk and Curd removed.');
     }
 })();
-// ===== END RESET LOGIC =====
 
-// Cart functionality
+
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-// Product image mapping
 const productImages = {
     1: 'images/ghee.png',
     3: 'images/gomutra.png',
@@ -44,7 +32,6 @@ const productImages = {
     8: 'images/paneer.png',
     9: 'images/gomutra.png'
 };
-
 function updateCartCount() {
     const cartCount = document.querySelector('.cart-count');
     if (cartCount) {
@@ -52,10 +39,8 @@ function updateCartCount() {
         cartCount.textContent = totalItems;
     }
 }
-
 function addToCart(id, name, price) {
     const existingItem = cart.find(item => item.id === id);
-    
     if (existingItem) {
         existingItem.quantity += 1;
     } else {
@@ -67,20 +52,16 @@ function addToCart(id, name, price) {
             image: productImages[id] || 'images/placeholder.png'
         });
     }
-    
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
-    
     alert(`${name} added to cart!`);
 }
-
 function removeFromCart(id) {
     cart = cart.filter(item => item.id !== id);
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
     displayCart();
 }
-
 function updateQuantity(id, change) {
     const item = cart.find(item => item.id === id);
     if (item) {
@@ -93,13 +74,10 @@ function updateQuantity(id, change) {
         }
     }
 }
-
 function displayCart() {
     const cartItemsContainer = document.getElementById('cart-items');
     const cartTotalElement = document.getElementById('cart-total');
-    
     if (!cartItemsContainer) return;
-    
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = `
             <div class="empty-cart">
@@ -111,11 +89,9 @@ function displayCart() {
         if (cartTotalElement) cartTotalElement.textContent = '₹0';
         return;
     }
-    
     let total = 0;
     cartItemsContainer.innerHTML = cart.map(item => {
         total += item.price * item.quantity;
-        // Get image from item or use product mapping
         const itemImage = item.image || productImages[item.id] || 'images/ghee.png';
         return `
             <div class="cart-item">
@@ -133,12 +109,9 @@ function displayCart() {
             </div>
         `;
     }).join('');
-    
     if (cartTotalElement) {
         cartTotalElement.textContent = `₹${total}`;
     }
-    
-    // Update cart items with images if they don't have them
     let updated = false;
     cart.forEach(item => {
         if (!item.image && productImages[item.id]) {
@@ -150,11 +123,9 @@ function displayCart() {
         localStorage.setItem('cart', JSON.stringify(cart));
     }
 }
-
 function displayCheckoutSummary() {
     const summaryContainer = document.getElementById('checkout-summary');
     if (!summaryContainer) return;
-    
     let total = 0;
     const itemsHTML = cart.map(item => {
         const itemTotal = item.price * item.quantity;
@@ -166,7 +137,6 @@ function displayCheckoutSummary() {
             </div>
         `;
     }).join('');
-    
     summaryContainer.innerHTML = `
         ${itemsHTML}
         <div class="summary-total">
@@ -175,70 +145,53 @@ function displayCheckoutSummary() {
         </div>
     `;
 }
-
 function placeOrder(event) {
     event.preventDefault();
-    
     const name = document.getElementById('name').value;
     const phone = document.getElementById('phone').value;
     const address = document.getElementById('address').value;
-    
     if (!name || !phone || !address) {
         alert('Please fill in all fields');
         return;
     }
-    
     alert(`Order placed successfully!\n\nThank you ${name}!\nWe will contact you at ${phone} for delivery confirmation.`);
-    
     cart = [];
     localStorage.setItem('cart', JSON.stringify(cart));
     window.location.href = 'index.html';
 }
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateCartCount();
-    
     if (document.getElementById('cart-items')) {
         displayCart();
     }
-    
     if (document.getElementById('checkout-summary')) {
         displayCheckoutSummary();
     }
-    
     const checkoutForm = document.getElementById('checkout-form');
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', placeOrder);
     }
 });
 
-
-// Authentication Functions
 function openAuthModal() {
     document.getElementById('auth-modal').classList.add('active');
 }
-
 function closeAuthModal() {
     document.getElementById('auth-modal').classList.remove('active');
 }
-
 function toggleHamburgerMenu(event) {
     if (event) event.preventDefault();
     const dropdown = document.getElementById('hamburger-dropdown');
     const hamburgerBtn = document.getElementById('hamburger-btn');
-    
     dropdown.classList.toggle('active');
     hamburgerBtn.classList.toggle('active');
 }
-
 function switchTab(tab) {
     const tabs = document.querySelectorAll('.auth-tab');
     const forms = document.querySelectorAll('.auth-form-container');
-    
     tabs.forEach(t => t.classList.remove('active'));
     forms.forEach(f => f.classList.remove('active'));
-    
     if (tab === 'signin') {
         tabs[0].classList.add('active');
         document.getElementById('signin-form').classList.add('active');
@@ -248,12 +201,10 @@ function switchTab(tab) {
     }
 }
 
-// ====================================================
-// AUTH FUNCTIONS MOVED TO supabase-auth.js
-// ====================================================
-// handleSignUp, handleSignIn, and auth UI functions
-// are now in supabase-auth.js using Supabase Auth
-// ====================================================
+
+
+
+
 
     } else {
         profileBtn.innerHTML = `
@@ -262,23 +213,19 @@ function switchTab(tab) {
         profileBtn.onclick = openAuthModal;
     }
 }
-
 function toggleProfileDropdown(event) {
     event.preventDefault();
     const dropdown = document.getElementById('profile-dropdown');
     dropdown.classList.toggle('active');
 }
-
 function showOrders() {
     window.location.href = 'orders.html';
 }
-
 function showProfile() {
     alert('Profile page - Coming soon!');
     document.getElementById('profile-dropdown').classList.remove('active');
 }
 
-// Logout function - now uses Supabase Auth
 function logout() {
     if (typeof handleSignOut === 'function') {
         handleSignOut();
@@ -287,52 +234,37 @@ function logout() {
     }
 }
 
-// Close modal when clicking outside
 window.onclick = function(event) {
     const modal = document.getElementById('auth-modal');
     const dropdown = document.getElementById('profile-dropdown');
     const hamburgerDropdown = document.getElementById('hamburger-dropdown');
     const hamburgerBtn = document.getElementById('hamburger-btn');
-    
     if (event.target === modal) {
         closeAuthModal();
     }
-    
-    // Close profile dropdown when clicking outside
     if (dropdown && !event.target.closest('#profile-btn') && !event.target.closest('.profile-dropdown')) {
         dropdown.classList.remove('active');
     }
-    
-    // Close hamburger dropdown when clicking outside (only if it exists)
     if (hamburgerDropdown && hamburgerBtn && !event.target.closest('#hamburger-btn') && !event.target.closest('.hamburger-dropdown')) {
         hamburgerDropdown.classList.remove('active');
         hamburgerBtn.classList.remove('active');
     }
 }
 
-// Check login status on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateProfileButton();
 });
 
-
-// Display Orders
 async function displayOrders() {
     const ordersListContainer = document.getElementById('orders-list');
-    
     if (!ordersListContainer) return;
-    
-    // Show loading state
     ordersListContainer.innerHTML = `
         <div style="text-align: center; padding: 3rem;">
             <p>Loading your orders...</p>
         </div>
     `;
-    
     try {
-        // Get current user
         const { data: { user } } = await window.supabase.auth.getUser();
-        
         if (!user) {
             ordersListContainer.innerHTML = `
                 <div class="empty-orders">
@@ -343,14 +275,11 @@ async function displayOrders() {
             `;
             return;
         }
-        
-        // Fetch orders for this customer from Supabase
         const { data: orders, error } = await window.supabase
             .from('orders')
             .select('*, order_items(*)')
             .eq('customer_email', user.email)
             .order('created_at', { ascending: false });
-        
         if (error) {
             console.error('Error fetching orders:', error);
             ordersListContainer.innerHTML = `
@@ -361,7 +290,6 @@ async function displayOrders() {
             `;
             return;
         }
-        
         if (!orders || orders.length === 0) {
             ordersListContainer.innerHTML = `
                 <div class="empty-orders">
@@ -372,19 +300,15 @@ async function displayOrders() {
             `;
             return;
         }
-        
-        // Display orders
         ordersListContainer.innerHTML = orders.map(order => {
             const orderDate = new Date(order.created_at).toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 
             });
-            
             const orderItems = order.order_items || [];
             const orderItemsHTML = orderItems.map(item => {
                 const itemTotal = item.price * item.quantity;
-                
                 return `
                     <div class="order-item">
                         <img src="images/ghee.png" alt="${item.product_name}">
@@ -396,9 +320,7 @@ async function displayOrders() {
                     </div>
                 `;
             }).join('');
-            
             const statusClass = order.status.toLowerCase();
-            
             return `
                 <div class="order-card">
                     <div class="order-header">
@@ -418,7 +340,6 @@ async function displayOrders() {
                 </div>
             `;
         }).join('');
-        
     } catch (error) {
         console.error('Error displaying orders:', error);
         ordersListContainer.innerHTML = `
@@ -430,24 +351,17 @@ async function displayOrders() {
     }
 }
 
-// Initialize orders page
 if (window.location.pathname.includes('orders.html')) {
     document.addEventListener('DOMContentLoaded', function() {
         displayOrders();
     });
 }
 
-
-// Shop Products Database
 function getShopProducts() {
-    // Try to get products from localStorage first (admin managed)
     const adminProducts = localStorage.getItem('products');
-    
     if (adminProducts) {
         return JSON.parse(adminProducts);
     }
-    
-    // Fallback to default products if no admin products exist
     const defaultProducts = [
         { id: 1, name: "Premium A2 Ghee", category: "Bakery & Dairy", subcategory: "Ghee", price: 899, image: "images/ghee.png", description: "Pure A2 cow ghee made using traditional bilona method", inStock: true },
         { id: 3, name: "Gomutra Ark", category: "Conscious Living", subcategory: "Herbal Products", price: 299, image: "images/gomutra.png", description: "Traditional wellness product from cow urine", inStock: true },
@@ -457,59 +371,44 @@ function getShopProducts() {
         { id: 8, name: "Fresh Paneer", category: "Bakery & Dairy", subcategory: "Paneer", price: 350, image: "images/paneer.png", description: "Fresh cottage cheese made from organic milk", inStock: true },
         { id: 9, name: "Pure Gomutra", category: "Conscious Living", subcategory: "Herbal Products", price: 150, image: "images/gomutra.png", description: "Pure cow urine for traditional wellness", inStock: true }
     ];
-    
     return defaultProducts;
 }
-
 const shopProducts = getShopProducts();
 
-// Current filter state
 let currentFilter = { category: null, subcategory: null };
 
-// Filter products by subcategory
 function filterProductsBySubcategory(category, subcategory) {
     currentFilter = { category, subcategory };
-    
     const filteredProducts = shopProducts.filter(product => {
         return product.category === category && product.subcategory === subcategory;
     });
-    
     renderShopProducts(filteredProducts);
-    
-    // Update page header to show filter
     const pageHeader = document.querySelector('.page-header h1');
     if (pageHeader) {
         pageHeader.textContent = subcategory;
     }
-    
     const pageSubtext = document.querySelector('.page-header p');
     if (pageSubtext) {
         pageSubtext.textContent = `Showing ${filteredProducts.length} products in ${subcategory}`;
     }
 }
 
-// Show all products
 function showAllProducts() {
     currentFilter = { category: null, subcategory: null };
     renderShopProducts(shopProducts);
-    
     const pageHeader = document.querySelector('.page-header h1');
     if (pageHeader) {
         pageHeader.textContent = 'Our Products';
     }
-    
     const pageSubtext = document.querySelector('.page-header p');
     if (pageSubtext) {
         pageSubtext.textContent = 'Explore our range of pure organic cow products';
     }
 }
 
-// Render products to the shop page
 function renderShopProducts(products) {
     const productGrid = document.querySelector('.product-grid');
-    
     if (!productGrid) return;
-    
     if (products.length === 0) {
         productGrid.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 4rem 2rem;">
@@ -520,11 +419,8 @@ function renderShopProducts(products) {
         `;
         return;
     }
-    
     const vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    
     productGrid.innerHTML = products.map(product => {
-        // Find vendor for this product
         let vendorInfo = { vendorName: 'CB Organic', businessName: 'CB Organic Farm' };
         if (product.vendor_id) {
             const vendor = vendors.find(v => v.id === product.vendor_id);
@@ -535,11 +431,9 @@ function renderShopProducts(products) {
                 };
             }
         }
-        
         const stockStatus = product.inStock && product.stock > 0 ? 'In Stock' : 'Out of Stock';
         const stockClass = product.inStock && product.stock > 0 ? 'in-stock' : 'out-of-stock';
         const isAvailable = product.inStock && product.stock > 0;
-        
         return `
             <div class="product-card">
                 <img src="${product.image}" alt="${product.name}">
@@ -568,7 +462,6 @@ function renderShopProducts(products) {
     }).join('');
 }
 
-// Quantity control functions
 function increaseQuantity(productId, maxStock) {
     const qtyInput = document.getElementById(`qty-${productId}`);
     if (qtyInput) {
@@ -578,7 +471,6 @@ function increaseQuantity(productId, maxStock) {
         }
     }
 }
-
 function decreaseQuantity(productId) {
     const qtyInput = document.getElementById(`qty-${productId}`);
     if (qtyInput) {
@@ -588,35 +480,25 @@ function decreaseQuantity(productId) {
         }
     }
 }
-
 function addToCartWithQuantity(productId) {
     const qtyInput = document.getElementById(`qty-${productId}`);
     const quantity = qtyInput ? parseInt(qtyInput.value) : 1;
-    
     const products = JSON.parse(localStorage.getItem('products')) || [];
     const product = products.find(p => p.id === productId);
-    
     if (!product) {
         alert('Product not found!');
         return;
     }
-    
     if (!product.inStock || product.stock <= 0) {
         alert('This product is out of stock!');
         return;
     }
-    
     if (quantity > product.stock) {
         alert(`Only ${product.stock} items available in stock!`);
         return;
     }
-    
-    // Get existing cart
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    
-    // Check if product already in cart
     const existingItem = cart.find(item => item.id === productId);
-    
     if (existingItem) {
         existingItem.quantity += quantity;
     } else {
@@ -629,31 +511,19 @@ function addToCartWithQuantity(productId) {
             vendor_id: product.vendor_id
         });
     }
-    
-    // Save cart
     localStorage.setItem('cart', JSON.stringify(cart));
-    
-    // Update cart count
     if (typeof updateCartCount === 'function') {
         updateCartCount();
     }
-    
-    // Show success message
     alert(`${quantity} x ${product.name} added to cart!`);
-    
-    // Reset quantity to 1
     if (qtyInput) {
         qtyInput.value = 1;
     }
 }
 
-// Initialize shop page
 if (window.location.pathname.includes('shop.html')) {
     document.addEventListener('DOMContentLoaded', function() {
-        // Show all products by default
         renderShopProducts(shopProducts);
-        
-        // Add click event listeners to subcategory items
         const subcategoryItems = document.querySelectorAll('.subcategory-item');
         subcategoryItems.forEach(item => {
             item.addEventListener('click', function(e) {
@@ -663,8 +533,6 @@ if (window.location.pathname.includes('shop.html')) {
                 filterProductsBySubcategory(category, subcategory);
             });
         });
-        
-        // Add click event to main category links to show all in that category
         const categoryLinks = document.querySelectorAll('.category-link');
         categoryLinks.forEach(link => {
             link.addEventListener('click', function(e) {
@@ -675,29 +543,22 @@ if (window.location.pathname.includes('shop.html')) {
     });
 }
 
-
-// Admin Login Modal Functions
 function openAdminLogin(event) {
     if (event) event.preventDefault();
     document.getElementById('admin-modal').classList.add('active');
 }
-
 function closeAdminModal() {
     document.getElementById('admin-modal').classList.remove('active');
 }
-
 function handleAdminLoginModal(event) {
     event.preventDefault();
-    
     const email = document.getElementById('admin-modal-email').value;
     const password = document.getElementById('admin-modal-password').value;
     const messageEl = document.getElementById('admin-modal-message');
-    
     if (email === 'admin@cb.com' && password === 'admin123') {
         localStorage.setItem('adminLoggedIn', 'true');
         messageEl.textContent = 'Login successful! Redirecting to admin dashboard...';
         messageEl.className = 'auth-message success';
-        
         setTimeout(() => {
             window.location.href = 'admin-dashboard.html';
         }, 1000);
@@ -707,7 +568,6 @@ function handleAdminLoginModal(event) {
     }
 }
 
-// Close admin modal when clicking outside
 window.addEventListener('click', function(event) {
     const adminModal = document.getElementById('admin-modal');
     if (event.target === adminModal) {
@@ -715,21 +575,14 @@ window.addEventListener('click', function(event) {
     }
 });
 
-
-// Search Functionality
 function handleSearch() {
     const searchInput = document.querySelector('.main-search-bar');
     const searchBtn = document.querySelector('.search-btn');
-    
     if (!searchInput || !searchBtn) return;
-    
-    // Search on button click
     searchBtn.addEventListener('click', function(e) {
         e.preventDefault();
         performSearch();
     });
-    
-    // Search on Enter key
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -737,177 +590,124 @@ function handleSearch() {
         }
     });
 }
-
 function performSearch() {
     const searchInput = document.querySelector('.main-search-bar');
     const searchTerm = searchInput.value.trim().toLowerCase();
-    
     if (!searchTerm) {
         alert('Please enter a search term');
         return;
     }
-    
-    // Get all products
     const products = getShopProducts();
-    
-    // Filter products that match the search term
     const matchedProducts = products.filter(product => {
         return product.name.toLowerCase().includes(searchTerm) ||
                product.category.toLowerCase().includes(searchTerm) ||
                product.subcategory.toLowerCase().includes(searchTerm) ||
                product.description.toLowerCase().includes(searchTerm);
     });
-    
     if (matchedProducts.length === 0) {
         alert(`No products found for "${searchTerm}"`);
         return;
     }
-    
-    // Store search results and redirect to shop page
     sessionStorage.setItem('searchResults', JSON.stringify(matchedProducts));
     sessionStorage.setItem('searchTerm', searchTerm);
     window.location.href = 'shop.html';
 }
 
-// Display search results on shop page
 function displaySearchResults() {
     const searchResults = sessionStorage.getItem('searchResults');
     const searchTerm = sessionStorage.getItem('searchTerm');
-    
     if (searchResults && searchTerm) {
         const products = JSON.parse(searchResults);
         renderShopProducts(products);
-        
-        // Update page header
         const pageHeader = document.querySelector('.page-header h1');
         if (pageHeader) {
             pageHeader.textContent = `Search Results for "${searchTerm}"`;
         }
-        
         const pageSubtext = document.querySelector('.page-header p');
         if (pageSubtext) {
             pageSubtext.textContent = `Found ${products.length} product(s) matching your search`;
         }
-        
-        // Clear search results from session
         sessionStorage.removeItem('searchResults');
         sessionStorage.removeItem('searchTerm');
     }
 }
 
-// Initialize search on all pages
 document.addEventListener('DOMContentLoaded', function() {
     handleSearch();
-    
-    // Check for search results on shop page
     if (window.location.pathname.includes('shop.html')) {
         displaySearchResults();
     }
 });
 
 
-// ===== ROLE-BASED LOGIN DETECTION =====
-
-// Hardcoded admin credentials (for prototype only)
 const ADMIN_EMAIL = 'ruthvik@blockfortrust.com';
 const ADMIN_PASSWORD = 'Saireddy880227';
 
-// Check user role as they type - simplified for Supabase
-// Note: We can't verify credentials without actually logging in to Supabase
-// So we just check if the email matches the admin email pattern
+
+
 function checkUserRole() {
     const email = document.getElementById('signin-email')?.value.trim();
     const password = document.getElementById('signin-password')?.value.trim();
-    
     if (!email || !password) {
         hideRoleButtons();
         return;
     }
-    
-    // Show admin button hint if email matches admin email
-    // Actual role verification happens after Supabase login
     if (email === ADMIN_EMAIL) {
-        // Don't show buttons yet - wait for actual login
-        // This prevents showing admin button before authentication
         hideRoleButtons();
     } else {
         hideRoleButtons();
     }
 }
 
-// Show role-specific buttons
 function showRoleButtons(role) {
     const roleButtonsDiv = document.getElementById('role-buttons');
     const adminBtn = document.getElementById('admin-enter-btn');
     const defaultBtn = document.getElementById('default-signin-btn');
-    
     if (!roleButtonsDiv || !adminBtn || !defaultBtn) return;
-    
-    // Hide default sign in button
     defaultBtn.style.display = 'none';
-    
-    // Show role buttons container
     roleButtonsDiv.style.display = 'block';
-    
-    // Show appropriate button based on role
     if (role === 'admin') {
         adminBtn.style.display = 'block';
     } else {
-        // Customer - hide role buttons, show default
         hideRoleButtons();
     }
 }
 
-// Hide role-specific buttons
 function hideRoleButtons() {
     const roleButtonsDiv = document.getElementById('role-buttons');
     const adminBtn = document.getElementById('admin-enter-btn');
     const defaultBtn = document.getElementById('default-signin-btn');
-    
     if (!roleButtonsDiv || !adminBtn || !defaultBtn) return;
-    
     roleButtonsDiv.style.display = 'none';
     adminBtn.style.display = 'none';
     defaultBtn.style.display = 'block';
 }
 
-// Enter as Admin
 function enterAsAdmin() {
     const email = document.getElementById('signin-email').value.trim();
     const password = document.getElementById('signin-password').value.trim();
     const messageEl = document.getElementById('signin-message');
-    
-    // Check hardcoded admin credentials first
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        // Store session data
         localStorage.setItem('currentUser', email);
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userRole', 'admin');
-        
         messageEl.textContent = 'Logging in as Admin...';
         messageEl.className = 'auth-message success';
         messageEl.style.display = 'block';
-        
         setTimeout(() => {
             window.location.href = 'admin-dashboard.html';
         }, 1000);
         return;
     }
-    
-    // Fallback to localStorage users
     const users = JSON.parse(localStorage.getItem('users')) || [];
     const user = users.find(u => u.email === email && u.password === password && u.role === 'admin');
-    
     if (user) {
-        // Store session data
         localStorage.setItem('currentUser', JSON.stringify(user));
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userRole', 'admin');
-        
         messageEl.textContent = 'Logging in as Admin...';
         messageEl.className = 'auth-message success';
         messageEl.style.display = 'block';
-        
         setTimeout(() => {
             window.location.href = 'admin-dashboard.html';
         }, 1000);
@@ -918,10 +718,8 @@ function enterAsAdmin() {
     }
 }
 
-// Vendor login removed - vendors are now managed as supplier records in admin panel only
 
-// ====================================================
-// OLD AUTH CODE REMOVED
-// ====================================================
-// All authentication now handled by supabase-auth.js
-// ====================================================
+
+
+
+

@@ -1,31 +1,23 @@
-// ===== PRODUCT DISPLAY WITH VENDOR INFORMATION =====
-// Fetches products from Supabase database
+﻿
 
-// Load products with vendor information from Supabase
+
+
 async function loadProductsWithVendors() {
     const productGrid = document.querySelector('.product-grid');
     const homeProductGrid = document.getElementById('home-product-grid');
-    
     const targetGrid = productGrid || homeProductGrid;
     if (!targetGrid) return;
-    
-    // Show loading state
     targetGrid.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Loading products...</div>';
-    
     try {
-        // Fetch products from Supabase
         const { data: products, error } = await supabase
             .from('products')
             .select('*')
             .order('created_at', { ascending: false });
-        
         if (error) {
             console.error('Error fetching products:', error);
             targetGrid.innerHTML = '<div style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading products. Please try again.</div>';
             return;
         }
-        
-        // Check if products exist
         if (!products || products.length === 0) {
             const message = homeProductGrid ? 
                 'No products available yet. Check back soon!' : 
@@ -38,17 +30,12 @@ async function loadProductsWithVendors() {
             `;
             return;
         }
-    
-        // Get category from URL parameter (only on shop page)
         let filteredProducts = products;
         if (productGrid && !homeProductGrid) {
             const urlParams = new URLSearchParams(window.location.search);
             const categoryParam = urlParams.get('category');
-            
             if (categoryParam) {
                 filteredProducts = products.filter(product => product.category === categoryParam);
-                
-                // If no products in this category, show message
                 if (filteredProducts.length === 0) {
                     targetGrid.innerHTML = `
                         <div class="empty-state" style="text-align: center; padding: 3rem; grid-column: 1/-1;">
@@ -60,17 +47,11 @@ async function loadProductsWithVendors() {
                 }
             }
         }
-        
-        // Limit to 4 products on home page
         const displayProducts = homeProductGrid ? products.slice(0, 4) : filteredProducts;
-        
-        // Fetch vendors from Supabase
         const { data: vendors } = await supabase
             .from('vendors')
             .select('*');
-        
         targetGrid.innerHTML = displayProducts.map(product => {
-            // Find vendor for this product
             let vendorInfo = { vendorName: 'CB Organic', businessName: 'CB Organic Farm' };
             if (product.vendor_id && vendors) {
                 const vendor = vendors.find(v => v.id === product.vendor_id);
@@ -81,14 +62,10 @@ async function loadProductsWithVendors() {
                     };
                 }
             }
-            
             const stockStatus = product.stock > 0 ? 'In Stock' : 'Out of Stock';
             const stockClass = product.stock > 0 ? 'in-stock' : 'out-of-stock';
             const isAvailable = product.stock > 0;
-            
-            // Display unit (e.g., "500ml", "1kg")
             const unitDisplay = product.display_unit || (product.unit_quantity ? product.unit_quantity + product.unit : product.unit || '');
-            
             return `
                 <div class="product-card">
                     <img src="${product.image_url || 'images/placeholder.png'}" alt="${product.name}">
@@ -116,14 +93,13 @@ async function loadProductsWithVendors() {
                 </div>
             `;
         }).join('');
-        
     } catch (error) {
         console.error('Error loading products:', error);
         targetGrid.innerHTML = '<div style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading products. Please try again.</div>';
     }
 }
 
-// Quantity control functions
+
 function increaseQuantity(productId, maxStock) {
     const qtyInput = document.getElementById(`qty-${productId}`);
     if (qtyInput) {
@@ -147,8 +123,6 @@ function decreaseQuantity(productId) {
 function addToCartWithQuantity(productId) {
     const qtyInput = document.getElementById(`qty-${productId}`);
     const quantity = qtyInput ? parseInt(qtyInput.value) : 1;
-    
-    // Fetch product from Supabase to get latest data
     supabase
         .from('products')
         .select('*')
@@ -159,54 +133,39 @@ function addToCartWithQuantity(productId) {
                 alert('Product not found!');
                 return;
             }
-            
             if (product.stock <= 0) {
                 alert('This product is out of stock!');
                 return;
             }
-            
             if (quantity > product.stock) {
                 alert(`Only ${product.stock} items available in stock!`);
                 return;
             }
-            
-            // Add to cart using DataManager (localStorage for cart)
             DataManager.addToCart(product, quantity);
-            
-            // Update cart count
             if (typeof updateCartCount === 'function') {
                 updateCartCount();
             }
-            
-            // Show success message
             alert(`${quantity} x ${product.name} added to cart!`);
-            
-            // Reset quantity to 1
             if (qtyInput) {
                 qtyInput.value = 1;
             }
         });
 }
 
-// Add to cart from shop page (legacy function for compatibility)
+
 function addToCartFromShop(productId) {
     addToCartWithQuantity(productId);
 }
 
-// Highlight active category on shop page
+
 function highlightActiveCategory() {
     const urlParams = new URLSearchParams(window.location.search);
     const categoryParam = urlParams.get('category');
-    
     if (!categoryParam) return;
-    
-    // Update page header if exists
     const pageHeader = document.querySelector('.page-header h1');
     if (pageHeader) {
         pageHeader.textContent = categoryParam;
     }
-    
-    // Highlight active category in navigation
     const categoryLinks = document.querySelectorAll('.shop-category-nav .category-link');
     categoryLinks.forEach(link => {
         if (link.textContent.trim() === categoryParam) {
@@ -216,7 +175,7 @@ function highlightActiveCategory() {
     });
 }
 
-// Initialize on page load
+
 document.addEventListener('DOMContentLoaded', function() {
     if (document.querySelector('.product-grid') || document.getElementById('home-product-grid')) {
         loadProductsWithVendors();

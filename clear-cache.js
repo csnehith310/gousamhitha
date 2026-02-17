@@ -1,9 +1,9 @@
-// Clear all localStorage data and reinitialize with new admin credentials
+﻿
 console.log('Clearing localStorage...');
 localStorage.clear();
 console.log('localStorage cleared!');
 
-// Reinitialize with new admin credentials
+
 const defaultUsers = [
     { 
         id: 'admin-001', 

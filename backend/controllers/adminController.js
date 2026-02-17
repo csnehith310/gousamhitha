@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+﻿const bcrypt = require('bcrypt');
 const db = require('../db');
 
 const getDashboard = async (req, res) => {
@@ -31,7 +31,7 @@ const getDashboard = async (req, res) => {
     }
 };
 
-// Vendor Management
+
 const createVendor = async (req, res) => {
     try {
         const { vendorName, businessName, phone, address } = req.body;
@@ -66,7 +66,6 @@ const getVendorById = async (req, res) => {
     try {
         const { id } = req.params;
         const result = await db.query('SELECT * FROM vendors WHERE id = $1', [id]);
-        
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Vendor not found' });
         }
@@ -103,7 +102,6 @@ const deleteVendor = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if vendor has products
         const productsCheck = await db.query('SELECT COUNT(*) as count FROM products WHERE vendor_id = $1', [id]);
         const productCount = parseInt(productsCheck.rows[0].count);
 
@@ -126,21 +124,17 @@ const deleteVendor = async (req, res) => {
     }
 };
 
-// Order Management
+
 const getAllOrders = async (req, res) => {
     try {
         const { status, page = 1, limit = 20 } = req.query;
-        
         let query = 'SELECT * FROM orders';
         const params = [];
-        
         if (status) {
             query += ' WHERE status = $1';
             params.push(status);
         }
-        
         query += ' ORDER BY created_at DESC';
-        
         const offset = (page - 1) * limit;
         query += ` LIMIT ${params.length + 1} OFFSET ${params.length + 2}`;
         params.push(limit, offset);
@@ -182,7 +176,7 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
-// Product Management
+
 const getAllProducts = async (req, res) => {
     try {
         const result = await db.query(

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,36 +6,36 @@
     <title>About Us - Organic Cow Products</title>
     <link rel="stylesheet" href="styles.css">
     
-    <!-- Supabase Client Library -->
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Top Announcement Bar -->
+    
     <div class="top-strip">
         <div class="container">
             <p>Next day delivery available for select products | Minimum order applies</p>
         </div>
     </div>
 
-    <!-- Main Navigation -->
+    
     <nav class="navbar">
         <div class="container">
             <div class="nav-wrapper">
-                <!-- Left: Logo -->
+                
                 <div class="logo-section">
                     <div class="logo">CB</div>
                     <div class="logo-subtitle">Organic Products Store</div>
                 </div>
 
-                <!-- Center: Search Bar -->
+                
                 <div class="search-section">
                     <input type="text" placeholder="Search for organic products..." class="main-search-bar">
                     <button class="search-btn">Search</button>
                 </div>
 
-                <!-- Right: Navigation Items -->
+                
                 <div class="nav-items">
-                    <!-- Profile Icon -->
+                    
                     <a href="#" class="nav-item profile-icon-btn" id="profile-btn" onclick="openAuthModal()">
                         <div class="profile-icon-placeholder">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -46,14 +46,14 @@
                         </div>
                     </a>
                     
-                    <!-- Hamburger Menu -->
+                    
                     <button class="hamburger-menu" id="hamburger-btn" onclick="toggleHamburgerMenu(event)">
                         <span></span>
                         <span></span>
                         <span></span>
                     </button>
                     
-                    <!-- Hamburger Dropdown Menu -->
+                    
                     <div class="hamburger-dropdown" id="hamburger-dropdown">
                         <a href="orders.html" class="hamburger-item">
                             <img src="https://img.icons8.com/fluency/48/package.png" alt="Orders" class="hamburger-icon-img">
@@ -69,14 +69,14 @@
         </div>
     </nav>
 
-    <!-- Profile Dropdown (hidden by default) -->
+    
     <div class="profile-dropdown" id="profile-dropdown">
         <a href="#" onclick="showProfile()">My Profile</a>
         <a href="orders.html">Orders</a>
         <a href="#" onclick="logout()">Logout</a>
     </div>
 
-    <!-- Auth Modal -->
+    
     <div class="auth-modal" id="auth-modal">
         <div class="auth-modal-content">
             <span class="auth-close" onclick="closeAuthModal()">&times;</span>
@@ -86,7 +86,7 @@
                 <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
             </div>
 
-            <!-- Sign In Form -->
+            
             <div class="auth-form-container active" id="signin-form">
                 <h2>Welcome Back</h2>
                 <form onsubmit="handleSignIn(event)">
@@ -103,7 +103,7 @@
                 </form>
             </div>
 
-            <!-- Sign Up Form -->
+            
             <div class="auth-form-container" id="signup-form">
                 <h2>Create Account</h2>
                 <form onsubmit="handleSignUp(event)">
@@ -134,7 +134,7 @@
         </div>
     </div>
 
-    <!-- Secondary Navigation -->
+    
     <div class="secondary-nav">
         <div class="container">
             <div class="secondary-nav-links">
@@ -222,7 +222,7 @@
         </div>
     </footer>
 
-    <!-- Admin Login Modal -->
+    
     <div class="auth-modal" id="admin-modal">
         <div class="auth-modal-content">
             <span class="auth-close" onclick="closeAdminModal()">&times;</span>
@@ -247,7 +247,7 @@
         </div>
     </div>
 
-    <!-- Supabase Client Library -->
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-auth.js"></script>
     <script src="script.js"></script>

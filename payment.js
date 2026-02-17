@@ -1,6 +1,6 @@
-// ===== PAYMENT SYSTEM =====
+﻿
 
-// Payment Modal HTML
+
 const paymentModalHTML = `
 <div class="payment-modal" id="payment-modal" style="display: none;">
     <div class="payment-modal-overlay" onclick="closePaymentModal()"></div>
@@ -9,7 +9,6 @@ const paymentModalHTML = `
             <h2 id="payment-modal-title">Complete Payment</h2>
             <button class="payment-close" onclick="closePaymentModal()">&times;</button>
         </div>
-        
         <div class="payment-sidebar-body">
             <!-- Order Details Section -->
             <div class="order-details-section" id="order-details-section">
@@ -34,7 +33,6 @@ const paymentModalHTML = `
                     </div>
                 </div>
             </div>
-            
             <!-- Donation Details Section -->
             <div class="donation-details-section" id="donation-details-section" style="display: none;">
                 <h3>Donation Details</h3>
@@ -49,11 +47,9 @@ const paymentModalHTML = `
                     </div>
                 </div>
             </div>
-            
             <!-- Payment Methods Section -->
             <div class="payment-methods-section">
                 <h3>Select Payment Method</h3>
-                
                 <label class="payment-method-option">
                     <input type="radio" name="payment-method" value="Cash on Delivery" checked>
                     <div class="payment-method-card">
@@ -64,7 +60,6 @@ const paymentModalHTML = `
                         </div>
                     </div>
                 </label>
-                
                 <label class="payment-method-option">
                     <input type="radio" name="payment-method" value="UPI">
                     <div class="payment-method-card">
@@ -76,19 +71,16 @@ const paymentModalHTML = `
                     </div>
                 </label>
             </div>
-            
             <div id="payment-processing" class="payment-processing" style="display: none;">
                 <div class="payment-spinner"></div>
                 <div class="payment-processing-text">Connecting to payment server...</div>
                 <div class="payment-processing-subtext">Please wait while we process your payment</div>
             </div>
-            
             <div id="payment-success" class="payment-success" style="display: none;">
                 <div class="payment-success-icon">✓</div>
                 <div class="payment-success-text">Payment Successful!</div>
             </div>
         </div>
-        
         <div class="payment-sidebar-footer">
             <button class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
             <button class="btn btn-primary" id="pay-now-btn" onclick="processPayment()">Pay Now</button>
@@ -97,7 +89,7 @@ const paymentModalHTML = `
 </div>
 `;
 
-// Payment Modal Styles
+
 const paymentModalStyles = `
 <style>
 .payment-modal {
@@ -408,7 +400,7 @@ const paymentModalStyles = `
 </style>
 `;
 
-// Initialize payment modal
+
 function initializePaymentModal() {
     if (!document.getElementById('payment-modal')) {
         document.body.insertAdjacentHTML('beforeend', paymentModalStyles);
@@ -416,29 +408,21 @@ function initializePaymentModal() {
     }
 }
 
-// Global payment context
+
 let currentPaymentContext = null;
 
-// Open payment modal for checkout
+
 function openCheckoutPayment(orderData) {
     initializePaymentModal();
-    
     currentPaymentContext = {
         type: 'checkout',
         data: orderData
     };
-    
-    // Set title
     document.getElementById('payment-modal-title').textContent = 'Complete Payment';
-    
-    // Show order details section, hide donation section
     document.getElementById('order-details-section').style.display = 'block';
     document.getElementById('donation-details-section').style.display = 'none';
-    
-    // Populate order items
     const orderItemsList = document.getElementById('order-items-list');
     orderItemsList.innerHTML = '';
-    
     orderData.items.forEach(item => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'order-item';
@@ -451,93 +435,63 @@ function openCheckoutPayment(orderData) {
         `;
         orderItemsList.appendChild(itemDiv);
     });
-    
-    // Calculate breakdown
     const subtotal = orderData.total;
     const tax = subtotal * 0.05;
     const shipping = 50;
     const total = subtotal + tax + shipping;
-    
     document.getElementById('order-subtotal').textContent = '₹' + subtotal.toFixed(2);
     document.getElementById('order-tax').textContent = '₹' + tax.toFixed(2);
     document.getElementById('order-shipping').textContent = '₹' + shipping.toFixed(2);
     document.getElementById('order-total').textContent = '₹' + total.toFixed(2);
-    
-    // Update order data with final total
     orderData.finalTotal = total;
-    
-    // Show modal
     document.getElementById('payment-modal').style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
 
-// Open payment modal for donation
+
 function openDonationPayment(donationData) {
     initializePaymentModal();
-    
     currentPaymentContext = {
         type: 'donation',
         data: donationData
     };
-    
-    // Set title
     document.getElementById('payment-modal-title').textContent = 'Complete Donation';
-    
-    // Hide order details section, show donation section
     document.getElementById('order-details-section').style.display = 'none';
     document.getElementById('donation-details-section').style.display = 'block';
-    
-    // Populate donation details
     document.getElementById('donor-name-display').textContent = donationData.name;
     document.getElementById('donation-amount-display').textContent = '₹' + donationData.amount.toFixed(2);
-    
-    // Show modal
     document.getElementById('payment-modal').style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
 
-// Close payment modal
+
 function closePaymentModal() {
     document.getElementById('payment-modal').style.display = 'none';
     document.body.style.overflow = 'auto';
     currentPaymentContext = null;
-    
-    // Reset modal state
     document.getElementById('payment-processing').style.display = 'none';
     document.getElementById('payment-success').style.display = 'none';
     document.querySelector('.payment-methods-section').style.display = 'block';
     document.querySelector('.payment-sidebar-footer').style.display = 'flex';
 }
 
-// Process payment
+
 async function processPayment() {
     if (!currentPaymentContext) return;
-    
     const selectedMethod = document.querySelector('input[name="payment-method"]:checked').value;
-    
-    // Hide payment options and footer
     document.querySelector('.payment-methods-section').style.display = 'none';
     document.querySelector('.payment-sidebar-footer').style.display = 'none';
-    
-    // Show payment loader
     showPaymentLoader();
-    
-    // Simulate payment processing (2 seconds)
     setTimeout(async () => {
         hidePaymentLoader();
         showPaymentSuccess();
-        
-        // Process based on context type
         if (currentPaymentContext.type === 'checkout') {
             await processCheckoutPayment(selectedMethod);
         } else if (currentPaymentContext.type === 'donation') {
             processDonationPayment(selectedMethod);
         }
-        
-        // Close modal and redirect after 2 seconds
         setTimeout(() => {
             closePaymentModal();
-            
             if (currentPaymentContext.type === 'checkout') {
                 window.location.href = 'orders.html';
             } else {
@@ -547,7 +501,7 @@ async function processPayment() {
     }, 2000);
 }
 
-// Payment Loader Functions
+
 function showPaymentLoader() {
     document.getElementById('payment-processing').style.display = 'block';
     document.getElementById('payment-success').style.display = 'none';
@@ -561,19 +515,14 @@ function showPaymentSuccess() {
     document.getElementById('payment-success').style.display = 'block';
 }
 
-// Process checkout payment
+
 async function processCheckoutPayment(paymentMethod) {
     const orderData = currentPaymentContext.data;
-    
     const orderId = 'CB' + Date.now();
     const finalTotal = orderData.finalTotal || (orderData.total + (orderData.total * 0.05) + 50);
-    
     try {
-        // Get current user email from Supabase session
         const { data: { user } } = await window.supabase.auth.getUser();
         const customerEmail = user?.email || orderData.email || 'guest@example.com';
-        
-        // Insert order into Supabase orders table
         const { data: orderInserted, error: orderError } = await window.supabase
             .from('orders')
             .insert({
@@ -584,14 +533,11 @@ async function processCheckoutPayment(paymentMethod) {
             })
             .select()
             .single();
-        
         if (orderError) {
             console.error('Error inserting order:', orderError);
             alert('Failed to save order. Please try again.');
             return;
         }
-        
-        // Insert order items into Supabase order_items table
         const orderItems = orderData.items.map(item => ({
             order_id: orderId,
             product_id: item.id || null,
@@ -599,37 +545,28 @@ async function processCheckoutPayment(paymentMethod) {
             quantity: item.quantity,
             price: item.price
         }));
-        
         const { error: itemsError } = await window.supabase
             .from('order_items')
             .insert(orderItems);
-        
         if (itemsError) {
             console.error('Error inserting order items:', itemsError);
             alert('Failed to save order items. Please try again.');
             return;
         }
-        
         console.log('Order saved successfully:', orderId);
-        
-        // Clear cart from localStorage
         localStorage.setItem('cart', JSON.stringify([]));
-        
-        // Update cart count
         if (typeof updateCartCount === 'function') {
             updateCartCount();
         }
-        
     } catch (error) {
         console.error('Error processing checkout:', error);
         alert('Failed to process order. Please try again.');
     }
 }
 
-// Process donation payment
+
 function processDonationPayment(paymentMethod) {
     const donationData = currentPaymentContext.data;
-    
     const donation = {
         id: 'DON' + Date.now(),
         name: donationData.name,
@@ -639,40 +576,12 @@ function processDonationPayment(paymentMethod) {
         date: new Date().toLocaleDateString(),
         createdAt: new Date().toISOString()
     };
-    
-    // Save donation
     const donations = JSON.parse(localStorage.getItem('donations')) || [];
     donations.push(donation);
     localStorage.setItem('donations', JSON.stringify(donations));
 }
 
-// Razorpay integration placeholder (for future use)
+
 function initializeRazorpay(amount, orderId, callback) {
-    // This function will be used when integrating real Razorpay
-    // For now, it's a placeholder
-    
-    /* Example Razorpay integration:
-    const options = {
-        key: "YOUR_RAZORPAY_KEY",
-        amount: amount * 100, // Amount in paise
-        currency: "INR",
-        name: "CB Organic Store",
-        description: "Order Payment",
-        order_id: orderId,
-        handler: function (response) {
-            callback(true, response);
-        },
-        prefill: {
-            name: "Customer Name",
-            email: "customer@example.com",
-            contact: "9999999999"
-        },
-        theme: {
-            color: "#4a7c59"
-        }
-    };
-    
-    const rzp = new Razorpay(options);
-    rzp.open();
-    */
+
 }

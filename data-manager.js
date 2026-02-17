@@ -1,14 +1,13 @@
-// ====================================================
-// DATA MANAGER - CB ORGANIC STORE
-// ====================================================
-// Manages localStorage data and empty states
-// ====================================================
+﻿
 
-// ====================================================
-// INITIALIZATION
-// ====================================================
+
+
+
+
+
+
+
 function initializeDataStore() {
-    // Initialize empty data structures if not exists
     if (!localStorage.getItem('products')) {
         localStorage.setItem('products', JSON.stringify([]));
     }
@@ -32,12 +31,12 @@ function initializeDataStore() {
     }
 }
 
-// Initialize on load
+
 initializeDataStore();
 
-// ====================================================
-// PRODUCT MANAGEMENT
-// ====================================================
+
+
+
 
 function getAllProducts() {
     return JSON.parse(localStorage.getItem('products')) || [];
@@ -89,9 +88,9 @@ function deleteProduct(id) {
     return true;
 }
 
-// ====================================================
-// CATEGORY MANAGEMENT
-// ====================================================
+
+
+
 
 function getAllCategories() {
     return JSON.parse(localStorage.getItem('categories')) || [];
@@ -121,9 +120,9 @@ function deleteCategory(id) {
     return true;
 }
 
-// ====================================================
-// ORDER MANAGEMENT
-// ====================================================
+
+
+
 
 function getAllOrders() {
     return JSON.parse(localStorage.getItem('orders')) || [];
@@ -156,14 +155,11 @@ function addOrder(order) {
     };
     orders.push(newOrder);
     localStorage.setItem('orders', JSON.stringify(orders));
-    
-    // Update product stock
     if (order.items) {
         order.items.forEach(item => {
             updateProductStock(item.productId, -item.quantity);
         });
     }
-    
     return newOrder;
 }
 
@@ -182,9 +178,9 @@ function updateOrderStatus(id, status) {
     return updateOrder(id, { status });
 }
 
-// ====================================================
-// CART MANAGEMENT
-// ====================================================
+
+
+
 
 function getCart() {
     return JSON.parse(localStorage.getItem('cart')) || [];
@@ -193,7 +189,6 @@ function getCart() {
 function addToCart(product, quantity = 1) {
     const cart = getCart();
     const existingIndex = cart.findIndex(item => item.id === product.id);
-    
     if (existingIndex !== -1) {
         cart[existingIndex].quantity += quantity;
     } else {
@@ -203,7 +198,6 @@ function addToCart(product, quantity = 1) {
             addedAt: new Date().toISOString()
         });
     }
-    
     localStorage.setItem('cart', JSON.stringify(cart));
     return cart;
 }
@@ -211,7 +205,6 @@ function addToCart(product, quantity = 1) {
 function updateCartItem(productId, quantity) {
     const cart = getCart();
     const index = cart.findIndex(item => item.id === productId);
-    
     if (index !== -1) {
         if (quantity <= 0) {
             cart.splice(index, 1);
@@ -220,7 +213,6 @@ function updateCartItem(productId, quantity) {
         }
         localStorage.setItem('cart', JSON.stringify(cart));
     }
-    
     return cart;
 }
 
@@ -246,9 +238,9 @@ function getCartCount() {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
 }
 
-// ====================================================
-// VENDOR MANAGEMENT
-// ====================================================
+
+
+
 
 function getAllVendors() {
     return JSON.parse(localStorage.getItem('vendors')) || [];
@@ -283,9 +275,9 @@ function updateVendor(id, updates) {
     return null;
 }
 
-// ====================================================
-// USER MANAGEMENT
-// ====================================================
+
+
+
 
 function getAllUsers() {
     return JSON.parse(localStorage.getItem('users')) || [];
@@ -309,9 +301,9 @@ function addUser(user) {
     return newUser;
 }
 
-// ====================================================
-// DONATION MANAGEMENT
-// ====================================================
+
+
+
 
 function getAllDonations() {
     return JSON.parse(localStorage.getItem('donations')) || [];
@@ -330,17 +322,15 @@ function addDonation(donation) {
     return newDonation;
 }
 
-// ====================================================
-// STOCK MANAGEMENT
-// ====================================================
+
+
+
 
 function updateProductStock(productId, change) {
     const product = getProductById(productId);
     if (product) {
         const newStock = (product.stock || 0) + change;
         updateProduct(productId, { stock: Math.max(0, newStock) });
-        
-        // Log inventory change
         logInventoryChange(productId, change, product.stock, newStock);
     }
 }
@@ -358,9 +348,9 @@ function logInventoryChange(productId, change, oldStock, newStock) {
     localStorage.setItem('inventoryLogs', JSON.stringify(logs));
 }
 
-// ====================================================
-// EMPTY STATE HELPERS
-// ====================================================
+
+
+
 
 function hasProducts() {
     return getAllProducts().length > 0;
@@ -378,15 +368,14 @@ function isCartEmpty() {
     return getCart().length === 0;
 }
 
-// ====================================================
-// RENDER EMPTY STATES
-// ====================================================
+
+
+
 
 function renderEmptyState(container, message, icon = '📦') {
     if (typeof container === 'string') {
         container = document.getElementById(container);
     }
-    
     if (container) {
         container.innerHTML = `
             <div class="empty-state">
@@ -397,22 +386,20 @@ function renderEmptyState(container, message, icon = '📦') {
     }
 }
 
-// ====================================================
-// DATA SYNC (Future: Connect to Supabase)
-// ====================================================
 
-// Placeholder for future Supabase sync
+
+
+
+
 async function syncWithSupabase() {
-    // TODO: Implement Supabase sync
     console.log('Supabase sync not implemented yet');
 }
 
-// ====================================================
-// EXPORT FOR GLOBAL USE
-// ====================================================
+
+
+
 
 window.DataManager = {
-    // Products
     getAllProducts,
     getProductById,
     getProductsByCategory,
@@ -420,14 +407,10 @@ window.DataManager = {
     addProduct,
     updateProduct,
     deleteProduct,
-    
-    // Categories
     getAllCategories,
     getCategoryByName,
     addCategory,
     deleteCategory,
-    
-    // Orders
     getAllOrders,
     getOrderById,
     getOrdersByCustomer,
@@ -435,8 +418,6 @@ window.DataManager = {
     addOrder,
     updateOrder,
     updateOrderStatus,
-    
-    // Cart
     getCart,
     addToCart,
     updateCartItem,
@@ -444,32 +425,20 @@ window.DataManager = {
     clearCart,
     getCartTotal,
     getCartCount,
-    
-    // Vendors
     getAllVendors,
     getVendorById,
     addVendor,
     updateVendor,
-    
-    // Users
     getAllUsers,
     getUserByEmail,
     addUser,
-    
-    // Donations
     getAllDonations,
     addDonation,
-    
-    // Stock
     updateProductStock,
-    
-    // Empty States
     hasProducts,
     hasOrders,
     hasCategories,
     isCartEmpty,
     renderEmptyState,
-    
-    // Sync
     syncWithSupabase
 };

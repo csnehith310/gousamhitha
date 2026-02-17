@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+﻿const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 
@@ -55,7 +55,6 @@ const login = async (req, res) => {
         }
 
         const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-        
         if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }

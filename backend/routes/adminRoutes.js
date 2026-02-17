@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const { 
     getDashboard, 
@@ -18,18 +18,18 @@ router.use(requireRole('admin'));
 
 router.get('/dashboard', getDashboard);
 
-// Vendor Management Routes
+
 router.post('/vendors', createVendor);
 router.get('/vendors', getAllVendors);
 router.get('/vendors/:id', getVendorById);
 router.put('/vendors/:id', updateVendor);
 router.delete('/vendors/:id', deleteVendor);
 
-// Order Management Routes
+
 router.get('/orders', getAllOrders);
 router.put('/orders/:id/status', updateOrderStatus);
 
-// Product Management Routes
+
 router.get('/products', getAllProducts);
 
 module.exports = router;

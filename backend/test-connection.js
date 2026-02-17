@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const { Pool } = require('pg');
 
 console.log('Testing Supabase Connection...\n');

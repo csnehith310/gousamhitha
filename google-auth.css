@@ -1,4 +1,4 @@
-/* Google Sign In Button Styles */
+﻿
 
 .auth-divider {
     display: flex;
@@ -54,7 +54,7 @@
     flex-shrink: 0;
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 480px) {
     .btn-google {
         font-size: 0.9rem;
