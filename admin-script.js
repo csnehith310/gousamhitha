@@ -498,68 +498,127 @@ async function handleAddProduct(event) {
     }
 }
 
-// Load Orders Table
-function loadOrdersTable() {
-    const orders = JSON.parse(localStorage.getItem('orders')) || [];
+// Load Orders Table from Supabase
+async function loadOrdersTable() {
     const tbody = document.getElementById('orders-table-body');
     
     if (!tbody) return;
     
-    tbody.innerHTML = orders.map((order, index) => `
-        <tr>
-            <td>${order.id}</td>
-            <td>${order.customerName}</td>
-            <td>${order.items.map(item => `${item.name} (${item.quantity})`).join(', ')}</td>
-            <td>₹${order.total}</td>
-            <td>${order.date}</td>
-            <td>
-                <select class="status-select" onchange="updateOrderStatus(${index}, this.value)">
-                    <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Packed" ${order.status === 'Packed' ? 'selected' : ''}>Packed</option>
-                    <option value="Shipped" ${order.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
-                    <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                </select>
-            </td>
-            <td>
-                ${order.status === 'Delivered' ? 
-                    `<button class="btn-delete" onclick="deleteOrder(${index})" style="background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">Delete</button>` : 
-                    `<span style="color: #999; font-size: 0.85rem;">Available after delivery</span>`
-                }
-            </td>
-        </tr>
-    `).join('') || '<tr><td colspan="7">No orders yet</td></tr>';
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading orders...</td></tr>';
+    
+    try {
+        // Fetch orders from Supabase
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select('*, order_items(*)')
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Error fetching orders:', error);
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading orders</td></tr>';
+            return;
+        }
+        
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No orders yet</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = orders.map((order) => {
+            const items = order.order_items || [];
+            const itemsText = items.map(item => `${item.product_name} (${item.quantity})`).join(', ');
+            const orderDate = new Date(order.created_at).toLocaleDateString();
+            
+            return `
+            <tr>
+                <td>${order.id}</td>
+                <td>${order.customer_email || 'N/A'}</td>
+                <td>${itemsText || 'No items'}</td>
+                <td>₹${order.total}</td>
+                <td>${orderDate}</td>
+                <td>
+                    <select class="status-select" onchange="updateOrderStatus('${order.id}', this.value)">
+                        <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Packed" ${order.status === 'Packed' ? 'selected' : ''}>Packed</option>
+                        <option value="Shipped" ${order.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+                        <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                    </select>
+                </td>
+                <td>
+                    ${order.status === 'Delivered' ? 
+                        `<button class="btn-delete" onclick="deleteOrder('${order.id}')" style="background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">Delete</button>` : 
+                        `<span style="color: #999; font-size: 0.85rem;">Available after delivery</span>`
+                    }
+                </td>
+            </tr>
+        `}).join('');
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading orders</td></tr>';
+    }
 }
 
-// Update Order Status
-function updateOrderStatus(index, newStatus) {
-    const orders = JSON.parse(localStorage.getItem('orders')) || [];
-    if (orders[index]) {
-        orders[index].status = newStatus;
-        localStorage.setItem('orders', JSON.stringify(orders));
+// Update Order Status in Supabase
+async function updateOrderStatus(orderId, newStatus) {
+    try {
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: newStatus })
+            .eq('id', orderId);
+        
+        if (error) {
+            console.error('Error updating order status:', error);
+            alert('Error updating order status');
+            return;
+        }
+        
         // Reload table to update delete button visibility
-        loadOrdersTable();
+        await loadOrdersTable();
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        alert('Error updating order status. Please try again.');
     }
 }
 
-// Delete Order (only for delivered orders)
-function deleteOrder(index) {
-    const orders = JSON.parse(localStorage.getItem('orders')) || [];
-    
-    if (!orders[index]) {
-        alert('Order not found!');
-        return;
-    }
-    
-    if (orders[index].status !== 'Delivered') {
-        alert('Only delivered orders can be deleted!');
-        return;
-    }
-    
-    if (confirm(`Are you sure you want to delete order ${orders[index].id}?`)) {
-        orders.splice(index, 1);
-        localStorage.setItem('orders', JSON.stringify(orders));
-        loadOrdersTable();
-        alert('Order deleted successfully!');
+// Delete Order from Supabase (only for delivered orders)
+async function deleteOrder(orderId) {
+    try {
+        // First check if order is delivered
+        const { data: order, error: fetchError } = await supabase
+            .from('orders')
+            .select('status')
+            .eq('id', orderId)
+            .single();
+        
+        if (fetchError || !order) {
+            alert('Order not found!');
+            return;
+        }
+        
+        if (order.status !== 'Delivered') {
+            alert('Only delivered orders can be deleted!');
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to delete order ${orderId}?`)) {
+            const { error } = await supabase
+                .from('orders')
+                .delete()
+                .eq('id', orderId);
+            
+            if (error) {
+                console.error('Error deleting order:', error);
+                alert('Error deleting order: ' + error.message);
+                return;
+            }
+            
+            alert('Order deleted successfully!');
+            await loadOrdersTable();
+        }
+    } catch (error) {
+        console.error('Error deleting order:', error);
+        alert('Error deleting order. Please try again.');
     }
 }
 
@@ -608,25 +667,38 @@ function toggleCategoryManagement() {
     }
 }
 
-// Initialize categories in localStorage
-function initializeCategories() {
-    if (!localStorage.getItem('categories')) {
-        localStorage.setItem('categories', JSON.stringify(DEFAULT_CATEGORIES));
+// Initialize categories - No longer needed, categories are in Supabase
+async function initializeCategories() {
+    // Categories are now managed in Supabase database
+    // This function is kept for compatibility but does nothing
+}
+
+// Get categories from Supabase
+async function getCategories() {
+    try {
+        const { data: categories, error } = await supabase
+            .from('categories')
+            .select('name')
+            .order('name');
+        
+        if (error) {
+            console.error('Error fetching categories:', error);
+            return DEFAULT_CATEGORIES;
+        }
+        
+        return categories ? categories.map(c => c.name) : DEFAULT_CATEGORIES;
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+        return DEFAULT_CATEGORIES;
     }
 }
 
-// Get categories from localStorage
-function getCategories() {
-    const categories = localStorage.getItem('categories');
-    return categories ? JSON.parse(categories) : DEFAULT_CATEGORIES;
-}
-
-// Load categories into dropdown
-function loadCategoriesDropdown() {
+// Load categories into dropdown from Supabase
+async function loadCategoriesDropdown() {
     const categorySelect = document.getElementById('product-category');
     if (!categorySelect) return;
     
-    const categories = getCategories();
+    const categories = await getCategories();
     
     // Clear existing options except the first one
     categorySelect.innerHTML = '<option value="">Select Category</option>';
@@ -640,12 +712,12 @@ function loadCategoriesDropdown() {
     });
 }
 
-// Display categories list with delete buttons
-function displayCategoriesList() {
+// Display categories list with delete buttons from Supabase
+async function displayCategoriesList() {
     const categoriesList = document.getElementById('categories-list');
     if (!categoriesList) return;
     
-    const categories = getCategories();
+    const categories = await getCategories();
     
     categoriesList.innerHTML = '';
     
@@ -669,8 +741,8 @@ function displayCategoriesList() {
     });
 }
 
-// Add new category
-function addCategory() {
+// Add new category to Supabase
+async function addCategory() {
     const input = document.getElementById('new-category-input');
     if (!input) return;
     
@@ -681,47 +753,73 @@ function addCategory() {
         return;
     }
     
-    const categories = getCategories();
-    
-    // Check if category already exists
-    if (categories.includes(newCategory)) {
-        alert('Category already exists');
-        return;
+    try {
+        // Check if category already exists
+        const { data: existing } = await supabase
+            .from('categories')
+            .select('name')
+            .eq('name', newCategory)
+            .single();
+        
+        if (existing) {
+            alert('Category already exists');
+            return;
+        }
+        
+        // Add new category
+        const { error } = await supabase
+            .from('categories')
+            .insert([{ name: newCategory }]);
+        
+        if (error) {
+            console.error('Error adding category:', error);
+            alert('Error adding category: ' + error.message);
+            return;
+        }
+        
+        // Clear input
+        input.value = '';
+        
+        // Refresh displays
+        await loadCategoriesDropdown();
+        await displayCategoriesList();
+        
+        // Show success message
+        showMessage('Category added successfully!', 'success');
+    } catch (error) {
+        console.error('Error adding category:', error);
+        alert('Error adding category. Please try again.');
     }
-    
-    // Add new category
-    categories.push(newCategory);
-    localStorage.setItem('categories', JSON.stringify(categories));
-    
-    // Clear input
-    input.value = '';
-    
-    // Refresh displays
-    loadCategoriesDropdown();
-    displayCategoriesList();
-    
-    // Show success message
-    showMessage('Category added successfully!', 'success');
 }
 
-// Delete category
-function deleteCategory(categoryName) {
+// Delete category from Supabase
+async function deleteCategory(categoryName) {
     if (!confirm(`Are you sure you want to delete "${categoryName}"?`)) {
         return;
     }
     
-    let categories = getCategories();
-    
-    // Remove category
-    categories = categories.filter(cat => cat !== categoryName);
-    localStorage.setItem('categories', JSON.stringify(categories));
-    
-    // Refresh displays
-    loadCategoriesDropdown();
-    displayCategoriesList();
-    
-    // Show success message
-    showMessage('Category deleted successfully!', 'success');
+    try {
+        const { error } = await supabase
+            .from('categories')
+            .delete()
+            .eq('name', categoryName);
+        
+        if (error) {
+            console.error('Error deleting category:', error);
+            alert('Error deleting category: ' + error.message);
+            return;
+        }
+        
+        // Refresh displays
+        await loadCategoriesDropdown();
+        await displayCategoriesList();
+        
+        // Show success message
+        showMessage('Category deleted successfully!', 'success');
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        alert('Error deleting category. Please try again.');
+    }
 }
 
 // Show message helper

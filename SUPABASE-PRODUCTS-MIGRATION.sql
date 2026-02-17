@@ -20,9 +20,30 @@ UPDATE products
 SET in_stock = (stock > 0)
 WHERE in_stock IS NULL;
 
+-- Ensure categories table exists with proper structure
+CREATE TABLE IF NOT EXISTS categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insert default categories if table is empty
+INSERT INTO categories (name) 
+SELECT * FROM (VALUES 
+    ('Fruits & Vegetables'),
+    ('Daily Staples'),
+    ('Snacks & More'),
+    ('Bakery & Dairy'),
+    ('Home Food'),
+    ('Special Categories'),
+    ('Conscious Living')
+) AS t(name)
+WHERE NOT EXISTS (SELECT 1 FROM categories LIMIT 1);
+
 -- Create index for better query performance
 CREATE INDEX IF NOT EXISTS idx_products_vendor ON products(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_products_in_stock ON products(in_stock);
+CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
 
 -- Verify the migration
 SELECT 
