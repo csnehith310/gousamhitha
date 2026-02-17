@@ -25,15 +25,13 @@
 
 // Initialize admin data - NO DEFAULT PRODUCTS
 function initializeAdminData() {
-    // Initialize products as empty array if not exists
-    if (!localStorage.getItem('products')) {
-        localStorage.setItem('products', JSON.stringify([]));
-    }
-    
-    // Initialize orders as empty array if not exists
-    if (!localStorage.getItem('orders')) {
-        localStorage.setItem('orders', JSON.stringify([]));
-    }
+    // Clear old localStorage data to prevent conflicts with Supabase
+    console.log('Clearing localStorage to use Supabase database only...');
+    localStorage.removeItem('products');
+    localStorage.removeItem('orders');
+    localStorage.removeItem('vendors');
+    localStorage.removeItem('categories');
+    console.log('localStorage cleared - using Supabase database');
 }
 
 // Admin Login
