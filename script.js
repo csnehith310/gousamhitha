@@ -240,7 +240,7 @@ window.onclick = function(event) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    updateProfileButton();
+    // Profile button is now handled by supabase-auth.js checkAuthState()
 });
 
 async function displayOrders() {
