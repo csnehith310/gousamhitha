@@ -6,12 +6,12 @@
 
 const GOOGLE_CONFIG = {
     clientId: '488030012275-q24mqkugm2l0t6hgbc0uvd5lf0lj155q.apps.googleusercontent.com',
-    redirectUri: 'https:
+    redirectUri: 'https://primeflex200-ui.github.io/ecommerce/auth/google/callback.html',
     scope: 'openid email profile',
     responseType: 'code',
-    authEndpoint: 'https:
+    authEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth'
 };
-const API_BASE_URL = 'http:
+const API_BASE_URL = 'http://localhost:5000';
 
 
 
