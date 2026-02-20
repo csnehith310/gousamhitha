@@ -372,28 +372,34 @@ function previewImage(event) {
 
 async function handleAddProduct(event) {
     event.preventDefault();
-    const name = document.getElementById('product-name').value;
+    
+    const name = document.getElementById('product-name').value.trim();
     const category = document.getElementById('product-category').value;
-    const subcategory = document.getElementById('product-subcategory').value;
+    const subcategory = document.getElementById('product-subcategory').value.trim();
     const price = parseFloat(document.getElementById('product-price').value);
     const stock = parseInt(document.getElementById('product-stock').value);
     const unit = document.getElementById('product-unit').value;
     const unitQuantity = parseFloat(document.getElementById('product-unit-quantity').value);
-    const description = document.getElementById('product-description').value;
+    const description = document.getElementById('product-description').value.trim();
     const vendorId = document.getElementById('product-vendor').value;
     const messageEl = document.getElementById('form-message');
+    
+    // Validation
     if (!name || !category || !price || !stock || !unit || !unitQuantity) {
         messageEl.textContent = 'Please fill in all required fields';
         messageEl.className = 'form-message error';
         return;
     }
+    
     messageEl.textContent = 'Adding product...';
     messageEl.className = 'form-message';
+    
     const displayUnit = unitQuantity + unit;
+    
     const newProduct = {
         name,
         category,
-        subcategory,
+        subcategory: subcategory || null,
         price,
         stock,
         unit,
@@ -401,29 +407,50 @@ async function handleAddProduct(event) {
         display_unit: displayUnit,
         vendor_id: vendorId || null,
         image_url: imageBase64 || 'images/placeholder.png',
-        description,
+        description: description || null,
         in_stock: stock > 0
     };
-    console.log('Adding product to Supabase:', newProduct);
+    
+    console.log('=== ADDING PRODUCT TO SUPABASE ===');
+    console.log('Product data:', newProduct);
+    
     try {
         const { data, error } = await window.supabase
             .from('products')
             .insert([newProduct])
             .select();
+        
+        console.log('Supabase insert response:', { data, error });
+        
         if (error) {
             console.error('Error adding product:', error);
-            messageEl.textContent = 'Error adding product: ' + error.message;
+            messageEl.textContent = `Error adding product: ${error.message}`;
             messageEl.className = 'form-message error';
             return;
         }
-        console.log('Product added successfully:', data);
+        
+        if (!data || data.length === 0) {
+            console.error('No data returned from insert');
+            messageEl.textContent = 'Product may not have been saved. Please check the products page.';
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        console.log('Product added successfully:', data[0]);
         messageEl.textContent = 'Product added successfully! Redirecting...';
         messageEl.className = 'form-message success';
+        
+        // Reset form and image
+        document.getElementById('add-product-form').reset();
+        document.getElementById('image-preview').innerHTML = '';
+        imageBase64 = '';
+        
+        // Redirect to products page with cache buster
         setTimeout(() => {
-            window.location.href = 'admin-products.html?t=' + Date.now();
+            window.location.href = 'admin-products.html?refresh=' + Date.now();
         }, 1500);
     } catch (error) {
-        console.error('Error adding product:', error);
+        console.error('Exception adding product:', error);
         messageEl.textContent = 'Error adding product. Please try again.';
         messageEl.className = 'form-message error';
     }

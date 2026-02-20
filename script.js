@@ -345,23 +345,15 @@ if (window.location.pathname.includes('orders.html')) {
     });
 }
 
+// DEPRECATED: Products are now loaded from Supabase via product-display.js
+// This function is kept for backward compatibility but should not be used
 function getShopProducts() {
-    const adminProducts = localStorage.getItem('products');
-    if (adminProducts) {
-        return JSON.parse(adminProducts);
-    }
-    const defaultProducts = [
-        { id: 1, name: "Premium A2 Ghee", category: "Bakery & Dairy", subcategory: "Ghee", price: 899, image: "images/ghee.png", description: "Pure A2 cow ghee made using traditional bilona method", inStock: true },
-        { id: 3, name: "Gomutra Ark", category: "Conscious Living", subcategory: "Herbal Products", price: 299, image: "images/gomutra.png", description: "Traditional wellness product from cow urine", inStock: true },
-        { id: 4, name: "Organic Dung Cakes", category: "Home Food", subcategory: "Traditional Foods", price: 199, image: "images/cow-dung.png", description: "Eco-friendly organic dung cakes for traditional use", inStock: true },
-        { id: 5, name: "Panchagavya Mix", category: "Special Categories", subcategory: "Combo Packs", price: 499, image: "images/panchagavya.png", description: "Complete wellness solution with five cow products", inStock: true },
-        { id: 7, name: "Fresh Buttermilk", category: "Snacks & More", subcategory: "Traditional Snacks", price: 45, image: "images/buttermilk.png", description: "Refreshing traditional buttermilk", inStock: true },
-        { id: 8, name: "Fresh Paneer", category: "Bakery & Dairy", subcategory: "Paneer", price: 350, image: "images/paneer.png", description: "Fresh cottage cheese made from organic milk", inStock: true },
-        { id: 9, name: "Pure Gomutra", category: "Conscious Living", subcategory: "Herbal Products", price: 150, image: "images/gomutra.png", description: "Pure cow urine for traditional wellness", inStock: true }
-    ];
-    return defaultProducts;
+    console.warn('getShopProducts is deprecated - use product-display.js loadProductsWithVendors instead');
+    return [];
 }
-const shopProducts = getShopProducts();
+
+// DEPRECATED: Use product-display.js instead
+const shopProducts = [];
 
 let currentFilter = { category: null, subcategory: null };
 
@@ -394,118 +386,22 @@ function showAllProducts() {
     }
 }
 
+// DEPRECATED: This function is replaced by loadProductsWithVendors in product-display.js
 function renderShopProducts(products) {
-    const productGrid = document.querySelector('.product-grid');
-    if (!productGrid) return;
-    if (products.length === 0) {
-        productGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 4rem 2rem;">
-                <h2 style="color: #666; margin-bottom: 1rem;">No products found</h2>
-                <p style="color: #999; margin-bottom: 2rem;">Try selecting a different category</p>
-                <button onclick="showAllProducts()" class="btn btn-primary">Show All Products</button>
-            </div>
-        `;
-        return;
-    }
-    const vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    productGrid.innerHTML = products.map(product => {
-        let vendorInfo = { vendorName: 'CB Organic', businessName: 'CB Organic Farm' };
-        if (product.vendor_id) {
-            const vendor = vendors.find(v => v.id === product.vendor_id);
-            if (vendor) {
-                vendorInfo = {
-                    vendorName: vendor.vendorName,
-                    businessName: vendor.businessName
-                };
-            }
-        }
-        const stockStatus = product.inStock && product.stock > 0 ? 'In Stock' : 'Out of Stock';
-        const stockClass = product.inStock && product.stock > 0 ? 'in-stock' : 'out-of-stock';
-        const isAvailable = product.inStock && product.stock > 0;
-        return `
-            <div class="product-card">
-                <img src="${product.image}" alt="${product.name}">
-                <div class="vendor-info" style="font-size: 0.85rem; color: #666; margin: 0.5rem 0; padding: 0.5rem; background: #f9f9f9; border-radius: 5px;">
-                    <div style="margin-bottom: 0.3rem;"><strong>Vendor:</strong> ${vendorInfo.vendorName}</div>
-                    <div><strong>Business:</strong> ${vendorInfo.businessName}</div>
-                </div>
-                <h3>${product.name}</h3>
-                <p class="price">₹${product.price}</p>
-                <div class="stock-status" style="margin: 0.5rem 0;">
-                    <span class="status-badge ${stockClass}" style="padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600;">
-                        ${stockStatus}
-                    </span>
-                </div>
-                ${isAvailable ? 
-                    `<div class="quantity-selector" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 1rem 0;">
-                        <button onclick="decreaseQuantity(${product.id})" class="quantity-btn" style="width: 35px; height: 35px; border: 1px solid #4a7c59; background: white; color: #4a7c59; border-radius: 5px; font-size: 1.2rem; cursor: pointer; font-weight: bold;">-</button>
-                        <input type="number" id="qty-${product.id}" value="1" min="1" max="${product.stock}" style="width: 60px; height: 35px; text-align: center; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem;" readonly>
-                        <button onclick="increaseQuantity(${product.id}, ${product.stock})" class="quantity-btn" style="width: 35px; height: 35px; border: 1px solid #4a7c59; background: white; color: #4a7c59; border-radius: 5px; font-size: 1.2rem; cursor: pointer; font-weight: bold;">+</button>
-                    </div>
-                    <button onclick="addToCartWithQuantity(${product.id})" class="btn btn-primary" style="display: block; width: 100%; text-align: center; margin: 0.5rem 0;">Add to Cart</button>` :
-                    `<button class="btn btn-secondary" style="display: block; width: 100%; text-align: center; margin: 1rem 0; opacity: 0.5; cursor: not-allowed;" disabled>Out of Stock</button>`
-                }
-            </div>
-        `;
-    }).join('');
+    console.warn('renderShopProducts is deprecated - products are now loaded via product-display.js');
+    // This function is kept for backward compatibility but does nothing
 }
 
+// DEPRECATED: These functions are now in product-display.js
 function increaseQuantity(productId, maxStock) {
-    const qtyInput = document.getElementById(`qty-${productId}`);
-    if (qtyInput) {
-        let currentQty = parseInt(qtyInput.value);
-        if (currentQty < maxStock) {
-            qtyInput.value = currentQty + 1;
-        }
-    }
+    console.warn('increaseQuantity moved to product-display.js');
 }
 function decreaseQuantity(productId) {
-    const qtyInput = document.getElementById(`qty-${productId}`);
-    if (qtyInput) {
-        let currentQty = parseInt(qtyInput.value);
-        if (currentQty > 1) {
-            qtyInput.value = currentQty - 1;
-        }
-    }
+    console.warn('decreaseQuantity moved to product-display.js');
 }
 function addToCartWithQuantity(productId) {
-    const qtyInput = document.getElementById(`qty-${productId}`);
-    const quantity = qtyInput ? parseInt(qtyInput.value) : 1;
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    const product = products.find(p => p.id === productId);
-    if (!product) {
-        alert('Product not found!');
-        return;
-    }
-    if (!product.inStock || product.stock <= 0) {
-        alert('This product is out of stock!');
-        return;
-    }
-    if (quantity > product.stock) {
-        alert(`Only ${product.stock} items available in stock!`);
-        return;
-    }
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const existingItem = cart.find(item => item.id === productId);
-    if (existingItem) {
-        existingItem.quantity += quantity;
-    } else {
-        cart.push({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            quantity: quantity,
-            vendor_id: product.vendor_id
-        });
-    }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    if (typeof updateCartCount === 'function') {
-        updateCartCount();
-    }
-    alert(`${quantity} x ${product.name} added to cart!`);
-    if (qtyInput) {
-        qtyInput.value = 1;
+    console.warn('addToCartWithQuantity moved to product-display.js');
+}
     }
 }
 
