@@ -222,12 +222,31 @@ async function handleSignIn(event) {
 
 async function handleSignOut() {
     try {
+        console.log('=== SIGNING OUT ===');
+        
+        // Sign out from Supabase
         const { error } = await supabaseClient.auth.signOut();
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase sign out error:', error);
+            throw error;
+        }
+        
+        console.log('✓ Signed out from Supabase');
+        
+        // Clear any localStorage items
+        localStorage.removeItem('adminLoggedIn');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userRole');
+        
+        console.log('✓ Cleared localStorage');
+        console.log('✓ Redirecting to home page...');
+        
+        // Redirect to home page
         window.location.href = 'index.html';
     } catch (error) {
         console.error('Sign out error:', error);
-        alert('Failed to sign out');
+        alert('Failed to sign out: ' + error.message);
     }
 }
 
@@ -434,6 +453,7 @@ async function handleAdminLogin(event) {
 async function adminLogout() {
     const confirmLogout = confirm('Are you sure you want to logout?');
     if (confirmLogout) {
+        console.log('Admin logout initiated...');
         await handleSignOut();
     }
 }

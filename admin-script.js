@@ -44,14 +44,20 @@ function handleAdminLogin(event) {
 }
 
 
-function adminLogout() {
+async function adminLogout() {
     const confirmLogout = confirm('Are you sure you want to logout?\n\nClick OK to logout or Cancel to stay.');
     if (confirmLogout) {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('adminLoggedIn');
-        window.location.href = 'index.html';
+        // Use the Supabase auth logout if available
+        if (typeof handleSignOut === 'function') {
+            await handleSignOut();
+        } else {
+            // Fallback: clear localStorage and redirect
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('adminLoggedIn');
+            window.location.href = 'index.html';
+        }
     }
 }
 
