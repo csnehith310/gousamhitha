@@ -194,39 +194,65 @@ async function handleAddVendor(event) {
 async function loadProductsTable() {
     const tbody = document.getElementById('products-table-body');
     if (!tbody) {
-        console.log('products-table-body element not found');
+        console.error('❌ products-table-body element not found in DOM');
         return;
     }
+    
     tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading products...</td></tr>';
-    console.log('Fetching products from Supabase...');
+    
+    console.log('=== LOADING PRODUCTS TABLE ===');
+    console.log('1. Checking Supabase client...');
+    
     if (typeof window.supabase === 'undefined') {
-        console.error('Supabase client not available!');
+        console.error('❌ Supabase client not available!');
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Database connection not available. Please refresh the page.</td></tr>';
         return;
     }
+    
+    console.log('✓ Supabase client is available');
+    console.log('2. Fetching products from Supabase...');
+    
     try {
         const { data: products, error } = await window.supabase
             .from('products')
             .select('*')
             .order('created_at', { ascending: false });
         
-        console.log('Supabase response:', { products, error });
+        console.log('3. Supabase query completed');
+        console.log('   - Products data:', products);
+        console.log('   - Error:', error);
+        console.log('   - Products count:', products ? products.length : 0);
         
         if (error) {
-            console.error('Error fetching products:', error);
+            console.error('❌ Error fetching products:', error);
+            console.error('   - Error message:', error.message);
+            console.error('   - Error code:', error.code);
+            console.error('   - Error details:', error.details);
+            console.error('   - Error hint:', error.hint);
+            
             tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">
-                Error loading products: ${error.message}<br>
-                <small>Error code: ${error.code || 'N/A'}</small><br>
-                <small>Hint: ${error.hint || 'Check if the products table exists in Supabase'}</small>
+                <strong>Error loading products:</strong><br>
+                ${error.message}<br>
+                <small>Code: ${error.code || 'N/A'}</small><br>
+                <small>Details: ${error.details || 'N/A'}</small><br>
+                <small>Hint: ${error.hint || 'Check if the products table exists and RLS policies allow SELECT'}</small><br><br>
+                <button onclick="loadProductsTable()" class="btn-primary">Retry</button>
             </td></tr>`;
             return;
         }
-        console.log('Products fetched:', products ? products.length : 0);
+        
         if (!products || products.length === 0) {
+            console.log('ℹ️ No products found in database');
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No products yet. Click "Add New Product" to add your first product.</td></tr>';
             return;
         }
-        tbody.innerHTML = products.map(product => `
+        
+        console.log('✓ Products fetched successfully:', products.length, 'products');
+        console.log('4. Rendering products table...');
+        
+        tbody.innerHTML = products.map(product => {
+            console.log('   - Rendering product:', product.name, '(ID:', product.id, ')');
+            return `
             <tr>
                 <td><img src="${product.image_url || 'images/placeholder.png'}" alt="${product.name}" class="product-image-small" onerror="this.src='images/placeholder.png'"></td>
                 <td>${product.name}</td>
@@ -240,11 +266,20 @@ async function loadProductsTable() {
                     <button class="action-btn btn-toggle" onclick="toggleStock('${product.id}')">${product.in_stock ? 'Mark Out' : 'Mark In'}</button>
                 </td>
             </tr>
-        `).join('');
-        console.log('Products table loaded successfully with', products.length, 'products');
+        `}).join('');
+        
+        console.log('✓ Products table rendered successfully');
+        console.log('=== PRODUCTS TABLE LOAD COMPLETE ===');
     } catch (error) {
-        console.error('Error loading products:', error);
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading products: ' + error.message + '</td></tr>';
+        console.error('❌ Exception while loading products:', error);
+        console.error('   - Error name:', error.name);
+        console.error('   - Error message:', error.message);
+        console.error('   - Error stack:', error.stack);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #d32f2f;">
+            <strong>Error loading products:</strong><br>
+            ${error.message}<br><br>
+            <button onclick="loadProductsTable()" class="btn-primary">Retry</button>
+        </td></tr>`;
     }
 }
 
