@@ -390,13 +390,6 @@ async function checkAdminAuth() {
         return false;
     }
 }
-    } catch (error) {
-        console.error('checkAdminAuth error:', error);
-        alert('Authentication error. Please try logging in again.');
-        window.location.href = 'index.html';
-        return false;
-    }
-}
 
 
 
