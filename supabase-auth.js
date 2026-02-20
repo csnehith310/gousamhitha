@@ -136,6 +136,39 @@ async function handleSignIn(event) {
         if (data.user && data.session) {
             console.log('User signed in:', data.user.id);
             console.log('Session:', data.session ? 'EXISTS' : 'NULL');
+            
+            // Check if this is the admin user
+            if (email === 'ruthvik@blockfortrust.com') {
+                console.log('Admin user detected - redirecting to admin dashboard');
+                messageEl.textContent = 'Admin login successful! Redirecting...';
+                messageEl.className = 'auth-message success';
+                
+                // Ensure profile exists with admin role
+                const { data: profile, error: profileError } = await supabaseClient
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', data.user.id)
+                    .single();
+                
+                if (profileError || !profile) {
+                    console.log('Creating admin profile...');
+                    await supabaseClient
+                        .from('profiles')
+                        .insert({
+                            id: data.user.id,
+                            email: email,
+                            role: 'admin'
+                        });
+                }
+                
+                // Redirect to admin dashboard immediately
+                setTimeout(() => {
+                    window.location.href = 'admin-dashboard.html';
+                }, 1000);
+                return;
+            }
+            
+            // For non-admin users, continue with normal flow
             console.log('Fetching profile...');
             let { data: profile, error: profileError } = await supabaseClient
                 .from('profiles')
@@ -145,7 +178,7 @@ async function handleSignIn(event) {
             console.log('Profile fetch result:', { profile, profileError });
             if (profileError || !profile) {
                 console.log('Profile not found, creating...');
-                const role = email === 'ruthvik@blockfortrust.com' ? 'admin' : 'customer';
+                const role = 'customer';
                 const { data: newProfile, error: insertError } = await supabaseClient
                     .from('profiles')
                     .insert({
@@ -167,32 +200,13 @@ async function handleSignIn(event) {
             messageEl.textContent = 'Sign in successful!';
             messageEl.className = 'auth-message success';
             updateAuthUI(data.user, profile);
-            const roleButtons = document.getElementById('role-buttons');
-            const adminEnterBtn = document.getElementById('admin-enter-btn');
-            const defaultSigninBtn = document.getElementById('default-signin-btn');
-            if (profile && profile.role === 'admin') {
-                console.log('User is admin - showing admin button in modal');
-                if (roleButtons) roleButtons.style.display = 'block';
-                if (adminEnterBtn) {
-                    adminEnterBtn.style.display = 'block';
-                    // Remove any existing event listeners and add a new one
-                    const newBtn = adminEnterBtn.cloneNode(true);
-                    adminEnterBtn.parentNode.replaceChild(newBtn, adminEnterBtn);
-                    newBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Admin button clicked - calling enterAsAdmin');
-                        enterAsAdmin();
-                    });
-                }
-                if (defaultSigninBtn) defaultSigninBtn.style.display = 'none';
-            } else {
-                console.log('User is customer - redirecting to home');
-                setTimeout(() => {
-                    closeAuthModal();
-                    window.location.reload();
-                }, 1500);
-            }
+            
+            // For customer users, close modal and reload
+            console.log('User is customer - redirecting to home');
+            setTimeout(() => {
+                closeAuthModal();
+                window.location.reload();
+            }, 1500);
         } else {
             console.error('No user data or session returned');
             throw new Error('Login failed - no user data returned');
@@ -229,6 +243,18 @@ async function checkAuthState() {
                 .select('*')
                 .eq('id', session.user.id)
                 .single();
+            
+            // Check if admin user is on a customer page
+            const currentPage = window.location.pathname;
+            const isAdminPage = currentPage.includes('admin-');
+            const isAdminUser = session.user.email === 'ruthvik@blockfortrust.com' || (profile && profile.role === 'admin');
+            
+            if (isAdminUser && !isAdminPage) {
+                console.log('Admin user on customer page - redirecting to admin dashboard');
+                window.location.href = 'admin-dashboard.html';
+                return;
+            }
+            
             updateAuthUI(session.user, profile);
             return { user: session.user, profile: profile };
         } else {
@@ -315,9 +341,16 @@ async function checkAdminAuth() {
         }
         if (!session) {
             console.log('No session - redirecting to index.html');
-            console.warn('⚠️ No session found - user should login');
-            return true; 
+            window.location.href = 'index.html';
+            return false;
         }
+        
+        // Check if user is admin by email first
+        if (session.user.email === 'ruthvik@blockfortrust.com') {
+            console.log('Admin user verified by email');
+            return true;
+        }
+        
         const { data: profile, error: profileError } = await supabaseClient
             .from('profiles')
             .select('role')
@@ -328,13 +361,19 @@ async function checkAdminAuth() {
             console.error('Profile error:', profileError);
             if (profileError.code === 'PGRST116') {
                 console.warn('⚠️ Profile not found in database!');
-                console.warn('⚠️ Please run: INSERT INTO profiles (id, email, role) SELECT id, email, \'admin\' FROM auth.users WHERE email = \'ruthvik@blockfortrust.com\'');
-                console.warn('⚠️ Allowing page to load for now...');
-                return true; 
+                // If it's the admin email, allow access anyway
+                if (session.user.email === 'ruthvik@blockfortrust.com') {
+                    console.log('Admin email detected - granting access');
+                    return true;
+                }
+                alert('Profile not found. Please contact support.');
+                window.location.href = 'index.html';
+                return false;
             }
-            console.error('⚠️ Profile fetch error, but allowing page to load');
-            console.error('⚠️ Error details:', profileError);
-            return true; 
+            console.error('⚠️ Profile fetch error');
+            alert('Authentication error. Please try logging in again.');
+            window.location.href = 'index.html';
+            return false;
         }
         if (!profile || profile.role !== 'admin') {
             console.log('User is not admin - role:', profile?.role);
@@ -344,6 +383,13 @@ async function checkAdminAuth() {
         }
         console.log('Admin access granted');
         return true;
+    } catch (error) {
+        console.error('checkAdminAuth error:', error);
+        alert('Authentication error. Please try logging in again.');
+        window.location.href = 'index.html';
+        return false;
+    }
+}
     } catch (error) {
         console.error('checkAdminAuth error:', error);
         alert('Authentication error. Please try logging in again.');
