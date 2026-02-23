@@ -24,27 +24,21 @@ async function handleSignUp(event) {
     const password = document.getElementById('signup-password').value;
     const confirmPassword = document.getElementById('signup-confirm').value;
     const messageEl = document.getElementById('signup-message');
-    console.log('=== SIGNUP ATTEMPT ===');
-    console.log('Name:', name);
-    console.log('Email:', email);
-    console.log('Mobile:', mobile);
-    console.log('Password length:', password.length);
+    
     if (password !== confirmPassword) {
         messageEl.textContent = 'Passwords do not match!';
         messageEl.className = 'auth-message error';
-        console.error('Password mismatch');
         return;
     }
     if (password.length < 6) {
         messageEl.textContent = 'Password must be at least 6 characters!';
         messageEl.className = 'auth-message error';
-        console.error('Password too short');
         return;
     }
     try {
         messageEl.textContent = 'Creating account...';
         messageEl.className = 'auth-message info';
-        console.log('Calling supabase.auth.signUp...');
+        
         const { data, error } = await supabaseClient.auth.signUp({
             email: email,
             password: password,
@@ -52,59 +46,45 @@ async function handleSignUp(event) {
                 data: {
                     full_name: name,
                     mobile: mobile
-                }
+                },
+                emailRedirectTo: window.location.origin
             }
         });
-        console.log('Signup response:', { data, error });
-        if (error) {
-            console.error('Signup error:', error);
-            throw error;
-        }
+        
+        if (error) throw error;
+        
         if (data.user) {
-            console.log('User created:', data.user.id);
-            console.log('User email:', data.user.email);
-            console.log('Session:', data.session ? 'EXISTS' : 'NULL');
             if (!data.session) {
-                messageEl.textContent = 'Account created! Please check your email to confirm your account.';
+                messageEl.textContent = 'Account created! You can now sign in.';
                 messageEl.className = 'auth-message success';
-                console.warn('Email confirmation required - no session returned');
+                setTimeout(() => {
+                    switchTab('signin');
+                }, 2000);
                 return;
             }
-            const role = email === 'ruthvik@blockfortrust.com' ? 'admin' : 'customer';
-            console.log('Assigned role:', role);
-            console.log('Creating profile...');
-            const { data: profile, error: profileError } = await supabaseClient
+            
+            const role = email === 'gowsamhitha123@gmail.com' ? 'admin' : 'customer';
+            
+            await supabaseClient
                 .from('profiles')
                 .insert({
                     id: data.user.id,
                     email: email,
                     role: role
-                })
-                .select()
-                .single();
-            if (profileError) {
-                console.error('Profile creation error:', profileError);
-                console.log('Profile creation failed, but continuing with signup');
-            } else {
-                console.log('Profile created successfully:', profile);
-            }
+                });
+            
             messageEl.textContent = 'Account created successfully! Redirecting...';
             messageEl.className = 'auth-message success';
+            
             setTimeout(() => {
                 if (role === 'admin') {
-                    console.log('Redirecting to admin dashboard');
                     window.location.href = 'admin-dashboard.html';
                 } else {
-                    console.log('Redirecting to home page');
                     window.location.href = 'index.html';
                 }
             }, 1500);
-        } else {
-            console.error('No user data returned');
-            throw new Error('Signup failed - no user data returned');
         }
     } catch (error) {
-        console.error('Sign up error:', error);
         messageEl.textContent = error.message || 'Failed to create account';
         messageEl.className = 'auth-message error';
     }
@@ -117,107 +97,70 @@ async function handleSignIn(event) {
     const email = document.getElementById('signin-email').value.trim();
     const password = document.getElementById('signin-password').value;
     const messageEl = document.getElementById('signin-message');
-    console.log('=== SIGNIN ATTEMPT ===');
-    console.log('Email:', email);
-    console.log('Password length:', password.length);
+    
     try {
         messageEl.textContent = 'Signing in...';
         messageEl.className = 'auth-message info';
-        console.log('Calling supabase.auth.signInWithPassword...');
+        
         const { data, error } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password
         });
-        console.log('Signin response:', { data, error });
+        
         if (error) {
-            console.error('Signin error:', error);
             if (error.message.includes('Email not confirmed')) {
-                messageEl.textContent = 'Please check your email and confirm your account before signing in. Check spam folder if needed.';
+                messageEl.textContent = 'Please check your email and confirm your account before signing in.';
                 messageEl.className = 'auth-message error';
                 return;
             }
             throw error;
         }
+        
         if (data.user && data.session) {
-            console.log('User signed in:', data.user.id);
-            console.log('Session:', data.session ? 'EXISTS' : 'NULL');
-            
-            // Check if this is the admin user
-            if (email === 'ruthvik@blockfortrust.com') {
-                console.log('Admin user detected - redirecting to admin dashboard');
+            if (email === 'gowsamhitha123@gmail.com') {
                 messageEl.textContent = 'Admin login successful! Redirecting...';
                 messageEl.className = 'auth-message success';
                 
-                // Ensure profile exists with admin role
-                const { data: profile, error: profileError } = await supabaseClient
+                await supabaseClient
                     .from('profiles')
-                    .select('role')
-                    .eq('id', data.user.id)
-                    .single();
+                    .upsert({
+                        id: data.user.id,
+                        email: email,
+                        role: 'admin'
+                    });
                 
-                if (profileError || !profile) {
-                    console.log('Creating admin profile...');
-                    await supabaseClient
-                        .from('profiles')
-                        .insert({
-                            id: data.user.id,
-                            email: email,
-                            role: 'admin'
-                        });
-                }
-                
-                // Redirect to admin dashboard immediately
                 setTimeout(() => {
                     window.location.href = 'admin-dashboard.html';
                 }, 1000);
                 return;
             }
             
-            // For non-admin users, continue with normal flow
-            console.log('Fetching profile...');
-            let { data: profile, error: profileError } = await supabaseClient
+            let { data: profile } = await supabaseClient
                 .from('profiles')
                 .select('role')
                 .eq('id', data.user.id)
                 .single();
-            console.log('Profile fetch result:', { profile, profileError });
-            if (profileError || !profile) {
-                console.log('Profile not found, creating...');
-                const role = 'customer';
-                const { data: newProfile, error: insertError } = await supabaseClient
+            
+            if (!profile) {
+                await supabaseClient
                     .from('profiles')
                     .insert({
                         id: data.user.id,
                         email: email,
-                        role: role
-                    })
-                    .select()
-                    .single();
-                console.log('Profile creation result:', { newProfile, insertError });
-                if (insertError) {
-                    console.error('Failed to create profile:', insertError);
-                    profile = { role: role };
-                } else {
-                    profile = newProfile;
-                }
+                        role: 'customer'
+                    });
             }
-            console.log('Final profile:', profile);
+            
             messageEl.textContent = 'Sign in successful!';
             messageEl.className = 'auth-message success';
-            updateAuthUI(data.user, profile);
+            updateAuthUI(data.user, profile || { role: 'customer' });
             
-            // For customer users, close modal and reload
-            console.log('User is customer - redirecting to home');
             setTimeout(() => {
                 closeAuthModal();
-                window.location.reload();
-            }, 1500);
-        } else {
-            console.error('No user data or session returned');
-            throw new Error('Login failed - no user data returned');
+                window.location.href = 'index.html';
+            }, 1000);
         }
     } catch (error) {
-        console.error('Sign in error:', error);
         messageEl.textContent = error.message || 'Invalid email or password';
         messageEl.className = 'auth-message error';
     }
@@ -356,22 +299,19 @@ document.addEventListener('click', function(event) {
 async function checkAdminAuth() {
     try {
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-        console.log('checkAdminAuth - Session:', session ? 'EXISTS' : 'NULL');
+        
         if (sessionError) {
-            console.error('Session error:', sessionError);
             alert('Session error. Please login again.');
             window.location.href = 'index.html';
             return false;
         }
+        
         if (!session) {
-            console.log('No session - redirecting to index.html');
             window.location.href = 'index.html';
             return false;
         }
         
-        // Check if user is admin by email first
-        if (session.user.email === 'ruthvik@blockfortrust.com') {
-            console.log('Admin user verified by email');
+        if (session.user.email === 'gowsamhitha123@gmail.com') {
             return true;
         }
         
@@ -380,35 +320,29 @@ async function checkAdminAuth() {
             .select('role')
             .eq('id', session.user.id)
             .single();
-        console.log('checkAdminAuth - Profile:', profile);
+        
         if (profileError) {
-            console.error('Profile error:', profileError);
             if (profileError.code === 'PGRST116') {
-                console.warn('⚠️ Profile not found in database!');
-                // If it's the admin email, allow access anyway
-                if (session.user.email === 'ruthvik@blockfortrust.com') {
-                    console.log('Admin email detected - granting access');
+                if (session.user.email === 'gowsamhitha123@gmail.com') {
                     return true;
                 }
                 alert('Profile not found. Please contact support.');
                 window.location.href = 'index.html';
                 return false;
             }
-            console.error('⚠️ Profile fetch error');
             alert('Authentication error. Please try logging in again.');
             window.location.href = 'index.html';
             return false;
         }
+        
         if (!profile || profile.role !== 'admin') {
-            console.log('User is not admin - role:', profile?.role);
             alert('Access denied. Admin privileges required.');
             window.location.href = 'index.html';
             return false;
         }
-        console.log('Admin access granted');
+        
         return true;
     } catch (error) {
-        console.error('checkAdminAuth error:', error);
         alert('Authentication error. Please try logging in again.');
         window.location.href = 'index.html';
         return false;
