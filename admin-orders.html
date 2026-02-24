@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - Gousamhitha Admin</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="admin-page">
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>Gousamhitha Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="admin-products.html" class="nav-link">Products</a>
+                <a href="admin-add-product.html" class="nav-link">Add Product</a>
+                <a href="admin-vendors.html" class="nav-link">Vendors</a>
+                <a href="admin-orders.html" class="nav-link active">Orders</a>
+                <a href="admin-deliveries.html" class="nav-link">Deliveries</a>
+                <a href="admin-payouts.html" class="nav-link">Vendor Payouts</a>
+                <a href="#" class="nav-link" onclick="adminLogout()">Logout</a>
+            </nav>
+        </aside>
+        
+        <main class="admin-content">
+            <div class="content-header">
+                <h1>Orders Received</h1>
+            </div>
+            
+            <div class="table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Phone</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    
+    <script src="supabase-auth.js"></script>
+    <script src="admin-script.js"></script>
+    <script src="js/toast.js"></script>
+</body>
+</html>
