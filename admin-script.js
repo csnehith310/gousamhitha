@@ -1,4 +1,4 @@
-﻿
+
 
 (function() {
     const CLEAR_FLAG = 'dummy_data_cleared_v1';
@@ -47,11 +47,11 @@ function handleAdminLogin(event) {
 async function adminLogout() {
     const confirmLogout = confirm('Are you sure you want to logout?\n\nClick OK to logout or Cancel to stay.');
     if (confirmLogout) {
-        // Use the Supabase auth logout if available
+
         if (typeof handleSignOut === 'function') {
             await handleSignOut();
         } else {
-            // Fallback: clear localStorage and redirect
+
             localStorage.removeItem('currentUser');
             localStorage.removeItem('isLoggedIn');
             localStorage.removeItem('userRole');
@@ -216,7 +216,7 @@ async function loadProductsTable() {
     }
     
     console.log('✓ Supabase client is available');
-    console.log('2. Fetching products from Supabase...');
+    console.log('2. Fetching products from Supabase database...');
     
     try {
         const { data: products, error } = await window.supabase
@@ -225,9 +225,6 @@ async function loadProductsTable() {
             .order('created_at', { ascending: false });
         
         console.log('3. Supabase query completed');
-        console.log('   - Products data:', products);
-        console.log('   - Error:', error);
-        console.log('   - Products count:', products ? products.length : 0);
         
         if (error) {
             console.error('❌ Error fetching products:', error);
@@ -247,17 +244,19 @@ async function loadProductsTable() {
             return;
         }
         
+        console.log('✅ Fetched products:', products);
+        console.log('   - Products count:', products ? products.length : 0);
+        
         if (!products || products.length === 0) {
             console.log('ℹ️ No products found in database');
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No products yet. Click "Add New Product" to add your first product.</td></tr>';
             return;
         }
         
-        console.log('✓ Products fetched successfully:', products.length, 'products');
-        console.log('4. Rendering products table...');
+        console.log('4. Rendering', products.length, 'products in table...');
         
         tbody.innerHTML = products.map(product => {
-            console.log('   - Rendering product:', product.name, '(ID:', product.id, ')');
+            console.log('   - Rendering:', product.name, 'ID:', product.id);
             return `
             <tr>
                 <td><img src="${product.image_url || 'images/placeholder.png'}" alt="${product.name}" class="product-image-small" onerror="this.src='images/placeholder.png'"></td>
@@ -274,7 +273,7 @@ async function loadProductsTable() {
             </tr>
         `}).join('');
         
-        console.log('✓ Products table rendered successfully');
+        console.log('✅ Products table rendered successfully');
         console.log('=== PRODUCTS TABLE LOAD COMPLETE ===');
     } catch (error) {
         console.error('❌ Exception while loading products:', error);
@@ -299,14 +298,14 @@ async function deleteProduct(id) {
             .eq('id', id);
         if (error) {
             console.error('Error deleting product:', error);
-            alert('Error deleting product: ' + error.message);
+            showToast('Error deleting product: ' + error.message, 'error');
             return;
         }
-        alert('Product deleted successfully!');
+        showToast('Product deleted successfully!');
         loadProductsTable();
     } catch (error) {
         console.error('Error deleting product:', error);
-        alert('Error deleting product. Please try again.');
+        showToast('Error deleting product. Please try again.', 'error');
     }
 }
 
@@ -320,7 +319,7 @@ async function toggleStock(id) {
             .single();
         if (fetchError) {
             console.error('Error fetching product:', fetchError);
-            alert('Error updating stock status');
+            showToast('Error updating stock status', 'error');
             return;
         }
         const { error: updateError } = await window.supabase
@@ -329,69 +328,139 @@ async function toggleStock(id) {
             .eq('id', id);
         if (updateError) {
             console.error('Error updating stock:', updateError);
-            alert('Error updating stock status');
+            showToast('Error updating stock status', 'error');
             return;
         }
         loadProductsTable();
     } catch (error) {
         console.error('Error toggling stock:', error);
-        alert('Error updating stock status. Please try again.');
+        showToast('Error updating stock status. Please try again.', 'error');
     }
 }
 
 
-function editProduct(id) {
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    const product = products.find(p => p.id === id);
-    if (product) {
+async function editProduct(id) {
+    try {
+        const { data: vendors } = await window.supabase
+            .from('vendors')
+            .select('id, business_name')
+            .order('business_name');
+        
+        const vendorSelect = document.getElementById('edit-vendor');
+        vendorSelect.innerHTML = '<option value="">Select Vendor</option>' + 
+            (vendors || []).map(v => `<option value="${v.id}">${v.business_name}</option>`).join('');
+        
+        const { data: product, error } = await window.supabase
+            .from('products')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (error || !product) {
+            console.error('Error fetching product:', error);
+            showToast('Error loading product details', 'error');
+            return;
+        }
+        
         document.getElementById('edit-product-id').value = product.id;
         document.getElementById('edit-name').value = product.name;
         document.getElementById('edit-category').value = product.category;
-        document.getElementById('edit-subcategory').value = product.subcategory;
+        document.getElementById('edit-subcategory').value = product.subcategory || '';
+        document.getElementById('edit-vendor').value = product.vendor_id || '';
         document.getElementById('edit-price').value = product.price;
         document.getElementById('edit-stock').value = product.stock;
-        document.getElementById('edit-description').value = product.description;
+        document.getElementById('edit-unit').value = product.unit || 'piece';
+        document.getElementById('edit-unit-quantity').value = product.unit_quantity || '';
+        document.getElementById('edit-display-unit').value = product.display_unit || '';
+        document.getElementById('edit-description').value = product.description || '';
+        
         const currentImageDiv = document.getElementById('edit-current-image');
-        currentImageDiv.innerHTML = `<img src="${product.image}" alt="${product.name}" style="max-width: 150px; border-radius: 8px;">`;
+        currentImageDiv.innerHTML = `<img src="${product.image_url || 'images/placeholder.png'}" alt="${product.name}" style="max-width: 150px; border-radius: 8px;">`;
+        
+        document.getElementById('edit-overlay').classList.add('active');
         document.getElementById('edit-panel').classList.add('active');
+    } catch (error) {
+        console.error('Error loading product:', error);
+        showToast('Error loading product details', 'error');
     }
 }
 
 
 function closeEditPanel() {
+    document.getElementById('edit-overlay').classList.remove('active');
     document.getElementById('edit-panel').classList.remove('active');
     document.getElementById('edit-product-form').reset();
 }
 
 
-function saveProductEdit(event) {
+async function saveProductEdit(event) {
     event.preventDefault();
-    const id = parseInt(document.getElementById('edit-product-id').value);
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    const productIndex = products.findIndex(p => p.id === id);
-    if (productIndex !== -1) {
-        products[productIndex].name = document.getElementById('edit-name').value;
-        products[productIndex].category = document.getElementById('edit-category').value;
-        products[productIndex].subcategory = document.getElementById('edit-subcategory').value;
-        products[productIndex].price = parseInt(document.getElementById('edit-price').value);
-        products[productIndex].stock = parseInt(document.getElementById('edit-stock').value);
-        products[productIndex].description = document.getElementById('edit-description').value;
-        products[productIndex].inStock = products[productIndex].stock > 0;
-        const imageInput = document.getElementById('edit-image');
-        if (imageInput.files && imageInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                products[productIndex].image = e.target.result;
-                localStorage.setItem('products', JSON.stringify(products));
-                closeEditPanel();
-                loadProductsTable();
-            };
-            reader.readAsDataURL(imageInput.files[0]);
-        } else {
-            localStorage.setItem('products', JSON.stringify(products));
-            closeEditPanel();
-            loadProductsTable();
+    
+    const id = document.getElementById('edit-product-id').value;
+    const name = document.getElementById('edit-name').value.trim();
+    const category = document.getElementById('edit-category').value;
+    const subcategory = document.getElementById('edit-subcategory').value.trim();
+    const vendorId = document.getElementById('edit-vendor').value;
+    const price = parseFloat(document.getElementById('edit-price').value);
+    const stock = parseInt(document.getElementById('edit-stock').value);
+    const unit = document.getElementById('edit-unit').value;
+    const unitQuantity = document.getElementById('edit-unit-quantity').value;
+    const displayUnit = document.getElementById('edit-display-unit').value.trim();
+    const description = document.getElementById('edit-description').value.trim();
+    const imageInput = document.getElementById('edit-image');
+    
+    const updatedProduct = {
+        name,
+        category,
+        subcategory: subcategory || null,
+        vendor_id: vendorId || null,
+        price,
+        stock,
+        unit: unit || 'piece',
+        unit_quantity: unitQuantity ? parseFloat(unitQuantity) : null,
+        display_unit: displayUnit || null,
+        description: description || null,
+        in_stock: stock > 0
+    };
+    
+    if (imageInput.files && imageInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            updatedProduct.image_url = e.target.result;
+            await updateProductInDatabase(id, updatedProduct);
+        };
+        reader.readAsDataURL(imageInput.files[0]);
+    } else {
+        await updateProductInDatabase(id, updatedProduct);
+    }
+}
+
+async function updateProductInDatabase(id, updatedProduct) {
+    try {
+        console.log('Updating product:', id);
+        console.log('Update data:', updatedProduct);
+        
+        const { data, error } = await window.supabase
+            .from('products')
+            .update(updatedProduct)
+            .eq('id', id)
+            .select();
+        
+        if (error) {
+            console.error('Error updating product:', error);
+            console.error('Error details:', JSON.stringify(error, null, 2));
+            showToast('Error updating product: ' + (error.message || JSON.stringify(error)), 'error');
+            return;
         }
+        
+        console.log('Product updated successfully:', data);
+        showToast('Product updated successfully!');
+        closeEditPanel();
+        loadProductsTable();
+    } catch (error) {
+        console.error('Error updating product:', error);
+        console.error('Error stack:', error.stack);
+        showToast('Error updating product: ' + error.message, 'error');
     }
 }
 
@@ -404,27 +473,46 @@ function previewImage(event) {
         const reader = new FileReader();
         reader.onload = function(e) {
             imageBase64 = e.target.result;
-            preview.innerHTML = `<img src="${imageBase64}" alt="Preview">`;
+            window.imageBase64 = imageBase64;
+            preview.innerHTML = `
+                <div style="margin-top: 1rem; padding: 1rem; background: #f9f9f9; border-radius: 8px; text-align: center;">
+                    <p style="margin-bottom: 0.5rem; font-weight: 600; color: #4a7c59;">Image Preview:</p>
+                    <img src="${imageBase64}" alt="Preview" style="max-width: 300px; max-height: 300px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                </div>
+            `;
         };
         reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = '';
+        imageBase64 = '';
+        window.imageBase64 = '';
     }
 }
 
 
 async function loadVendorsDropdown() {
     const vendorSelect = document.getElementById('product-vendor');
-    if (!vendorSelect) return;
+    if (!vendorSelect) {
+        console.error('Vendor dropdown element not found!');
+        return;
+    }
+    
+    console.log('Loading vendors dropdown...');
     
     try {
         const { data: vendors, error } = await window.supabase
             .from('vendors')
-            .select('*')
+            .select('id, vendor_name, business_name')
+            .eq('status', 'active')
             .order('vendor_name');
         
         if (error) {
             console.error('Error loading vendors:', error);
+            vendorSelect.innerHTML = '<option value="">Error loading vendors</option>';
             return;
         }
+        
+        console.log('Vendors fetched:', vendors);
         
         vendorSelect.innerHTML = '<option value="">Select Vendor</option>';
         
@@ -435,18 +523,25 @@ async function loadVendorsDropdown() {
                 option.textContent = `${vendor.vendor_name} - ${vendor.business_name}`;
                 vendorSelect.appendChild(option);
             });
-            console.log('Loaded', vendors.length, 'vendors into dropdown');
+            console.log('✓ Loaded', vendors.length, 'vendors into dropdown');
         } else {
-            console.log('No vendors found');
+            console.log('⚠ No vendors found in database');
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No vendors available - Add vendors first';
+            vendorSelect.appendChild(option);
         }
     } catch (error) {
-        console.error('Error loading vendors dropdown:', error);
+        console.error('Exception loading vendors:', error);
+        vendorSelect.innerHTML = '<option value="">Error loading vendors</option>';
     }
 }
 
 
 async function handleAddProduct(event) {
     event.preventDefault();
+    
+    console.log('=== ADD PRODUCT FORM SUBMITTED ===');
     
     const name = document.getElementById('product-name').value.trim();
     const category = document.getElementById('product-category').value;
@@ -459,9 +554,18 @@ async function handleAddProduct(event) {
     const vendorId = document.getElementById('product-vendor').value;
     const messageEl = document.getElementById('form-message');
     
-    // Validation
+    console.log('Form values collected:', { name, category, price, stock, unit, unitQuantity });
+    
     if (!name || !category || !price || !stock || !unit || !unitQuantity) {
+        console.error('Validation failed - missing required fields');
         messageEl.textContent = 'Please fill in all required fields';
+        messageEl.className = 'form-message error';
+        return;
+    }
+    
+    if (typeof window.supabase === 'undefined') {
+        console.error('❌ Supabase not initialized!');
+        messageEl.textContent = 'Database connection error. Please refresh the page.';
         messageEl.className = 'form-message error';
         return;
     }
@@ -486,8 +590,8 @@ async function handleAddProduct(event) {
         in_stock: stock > 0
     };
     
-    console.log('=== ADDING PRODUCT TO SUPABASE ===');
-    console.log('Product data:', newProduct);
+    console.log('=== INSERTING PRODUCT INTO SUPABASE ===');
+    console.log('Product data:', JSON.stringify(newProduct, null, 2));
     
     try {
         const { data, error } = await window.supabase
@@ -495,37 +599,45 @@ async function handleAddProduct(event) {
             .insert([newProduct])
             .select();
         
-        console.log('Supabase insert response:', { data, error });
+        console.log('Supabase response received');
+        console.log('Data:', data);
+        console.log('Error:', error);
         
         if (error) {
-            console.error('Error adding product:', error);
+            console.error('❌ Supabase insert error:', error);
+            console.error('Error message:', error.message);
+            console.error('Error code:', error.code);
+            console.error('Error details:', error.details);
             messageEl.textContent = `Error adding product: ${error.message}`;
             messageEl.className = 'form-message error';
             return;
         }
         
         if (!data || data.length === 0) {
-            console.error('No data returned from insert');
+            console.error('❌ No data returned from insert');
             messageEl.textContent = 'Product may not have been saved. Please check the products page.';
             messageEl.className = 'form-message error';
             return;
         }
         
-        console.log('Product added successfully:', data[0]);
+        console.log('✅ Product successfully inserted!');
+        console.log('Inserted product:', JSON.stringify(data[0], null, 2));
+        console.log('Product ID:', data[0].id);
+        
         messageEl.textContent = 'Product added successfully! Redirecting...';
         messageEl.className = 'form-message success';
         
-        // Reset form and image
         document.getElementById('add-product-form').reset();
         document.getElementById('image-preview').innerHTML = '';
         imageBase64 = '';
         
-        // Redirect to dashboard with cache buster
         setTimeout(() => {
-            window.location.href = 'admin-dashboard.html?refresh=' + Date.now();
+            console.log('Redirecting to products page...');
+            window.location.href = 'admin-products.html';
         }, 1500);
     } catch (error) {
-        console.error('Exception adding product:', error);
+        console.error('❌ Exception while adding product:', error);
+        console.error('Exception details:', error.message, error.stack);
         messageEl.textContent = 'Error adding product. Please try again.';
         messageEl.className = 'form-message error';
     }
@@ -533,93 +645,179 @@ async function handleAddProduct(event) {
 
 
 async function loadOrdersTable() {
+    console.log('=== LOADING ORDERS TABLE ===');
     const tbody = document.getElementById('orders-table-body');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error('orders-table-body element not found');
+        return;
+    }
+    
     tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">Loading orders...</td></tr>';
+    
+    if (!window.supabase) {
+        console.error('Supabase not initialized in loadOrdersTable');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #d32f2f;">Database not connected. Please refresh the page.</td></tr>';
+        return;
+    }
+    
     try {
+        console.log('Fetching orders from Supabase...');
         const { data: orders, error } = await window.supabase
             .from('orders')
             .select('*, order_items(*)')
             .order('created_at', { ascending: false });
+        
+        console.log('Fetched orders:', orders);
+        console.log('Fetch error:', error);
+        
         if (error) {
             console.error('Error fetching orders:', error);
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading orders</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading orders: ${error.message}</td></tr>`;
             return;
         }
+        
         if (!orders || orders.length === 0) {
+            console.log('No orders found in database');
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">No orders yet</td></tr>';
             return;
         }
+        
+        console.log(`Rendering ${orders.length} orders`);
         tbody.innerHTML = orders.map((order) => {
             const items = order.order_items || [];
             const itemsText = items.map(item => `${item.product_name} (${item.quantity})`).join(', ');
             const orderDate = new Date(order.created_at).toLocaleDateString();
+            const shortId = order.id.substring(0, 8);
+            
+            const locationBtn = (order.latitude && order.longitude) 
+                ? `<button class="action-btn btn-view" onclick="viewLocation(${order.latitude}, ${order.longitude})" style="background: #2196F3; color: white; padding: 0.4rem 0.8rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem;">📍 View Location</button>`
+                : '<span style="color: #999; font-size: 0.85rem;">No location</span>';
+            
             return `
             <tr>
-                <td>${order.id}</td>
-                <td>${itemsText || 'No items'}</td>
-                <td>₹${order.total}</td>
-                <td>N/A</td>
-                <td>${orderDate}</td>
-                <td>-</td>
+                <td style="font-family: monospace; font-size: 0.9rem;">${shortId}</td>
                 <td>
-                    <select class="status-select" onchange="updateOrderStatus('${order.id}', this.value)">
-                        <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                        <option value="Packed" ${order.status === 'Packed' ? 'selected' : ''}>Packed</option>
-                        <option value="Shipped" ${order.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
-                        <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                    </select>
+                    <div style="font-weight: 600;">${order.customer_name}</div>
+                    <div style="font-size: 0.85rem; color: #666;">${order.email || 'N/A'}</div>
                 </td>
+                <td>${order.phone}</td>
+                <td style="max-width: 200px;">
+                    <div style="font-size: 0.9rem;">${itemsText || 'No items'}</div>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.3rem;">${items.length} item(s)</div>
+                </td>
+                <td style="font-weight: 600; color: #4a7c59;">₹${order.total}</td>
                 <td>
-                    ${order.status === 'Delivered' ? 
-                        `<button class="btn-delete" onclick="deleteOrder('${order.id}')" style="background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">Delete</button>` : 
-                        `<span style="color: #999; font-size: 0.85rem;">Available after delivery</span>`
+                    <div style="font-size: 0.9rem;">${order.payment_method}</div>
+                    <div style="font-size: 0.8rem;">
+                        <span style="color: ${order.payment_status === 'paid' ? '#4caf50' : '#ff9800'};">
+                            ${order.payment_status === 'paid' ? '✓ Paid' : '⏳ Pending'}
+                        </span>
+                    </div>
+                </td>
+                <td>${locationBtn}</td>
+                <td>
+                    ${order.order_status === 'Delivered' ? 
+                        `<button class="action-btn btn-delete" onclick="window.deleteOrder('${order.id}')" style="background: #dc3545; color: white; padding: 0.4rem 0.8rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem;">Delete</button>` : 
+                        `<span style="color: #999; font-size: 0.85rem;">After delivery</span>`
                     }
                 </td>
             </tr>
         `}).join('');
+        console.log('Orders rendered successfully');
     } catch (error) {
-        console.error('Error loading orders:', error);
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading orders</td></tr>';
+        console.error('Exception in loadOrdersTable:', error);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #d32f2f;">Error loading orders: ${error.message}</td></tr>`;
     }
 }
+
+function viewLocation(lat, lng) {
+    const url = `https://www.google.com/maps?q=${lat},${lng}`;
+    window.open(url, '_blank');
+}
+
+window.viewLocation = viewLocation;
 
 
 async function updateOrderStatus(orderId, newStatus) {
+    console.log('=== UPDATING ORDER STATUS ===');
+    console.log('Order ID:', orderId);
+    console.log('Order ID type:', typeof orderId);
+    console.log('New Status:', newStatus);
+    
+    if (!window.supabase) {
+        console.error('Supabase not initialized!');
+        alert('Database connection error. Please refresh the page.');
+        return;
+    }
+    
     try {
-        const { error } = await window.supabase
+        console.log('Step 1: Fetching current order to verify it exists...');
+        const { data: existingOrder, error: fetchError } = await window.supabase
             .from('orders')
-            .update({ status: newStatus })
-            .eq('id', orderId);
-        if (error) {
-            console.error('Error updating order status:', error);
-            alert('Error updating order status');
+            .select('id, order_status')
+            .eq('id', orderId)
+            .single();
+        
+        console.log('Existing order:', existingOrder);
+        console.log('Fetch error:', fetchError);
+        
+        if (fetchError) {
+            console.error('Order not found:', fetchError);
+            alert('Order not found in database');
             return;
         }
+        
+        console.log('Step 2: Updating order status...');
+        const { data: updateData, error: updateError } = await window.supabase
+            .from('orders')
+            .update({ order_status: newStatus })
+            .eq('id', orderId)
+            .select();
+        
+        console.log('Update data:', updateData);
+        console.log('Update error:', updateError);
+        
+        if (updateError) {
+            console.error('Error updating order status:', updateError);
+            alert('Failed to update order status: ' + updateError.message);
+            return;
+        }
+        
+        console.log('Step 3: Order status updated successfully');
+        
+        if (typeof showToast === 'function') {
+            showToast(`Order status updated to ${newStatus}`, 'success');
+        }
+        
+        console.log('Step 4: Reloading orders table...');
         await loadOrdersTable();
+        console.log('Step 5: Complete');
+        
     } catch (error) {
-        console.error('Error updating order status:', error);
-        alert('Error updating order status. Please try again.');
+        console.error('Exception in updateOrderStatus:', error);
+        alert('Error: ' + (error.message || 'Failed to update order status'));
     }
 }
+
+window.updateOrderStatus = updateOrderStatus;
 
 
 async function deleteOrder(orderId) {
     try {
         const { data: order, error: fetchError } = await window.supabase
             .from('orders')
-            .select('status')
+            .select('order_status')
             .eq('id', orderId)
             .single();
         if (fetchError || !order) {
             alert('Order not found!');
             return;
         }
-        if (order.status !== 'Delivered') {
+        if (order.order_status !== 'Delivered') {
             alert('Only delivered orders can be deleted!');
             return;
         }
-        if (confirm(`Are you sure you want to delete order ${orderId}?`)) {
+        if (confirm(`Are you sure you want to delete order ${orderId.substring(0, 8)}?`)) {
             const { error } = await window.supabase
                 .from('orders')
                 .delete()
@@ -638,12 +836,14 @@ async function deleteOrder(orderId) {
     }
 }
 
+window.deleteOrder = deleteOrder;
+
 
 document.addEventListener('DOMContentLoaded', async function() {
     const currentPage = window.location.pathname;
     initializeAdminData();
     let retries = 0;
-    while (typeof window.supabase === 'undefined' && retries < 10) {
+    while (typeof window.supabase === 'undefined' && retries < 20) {
         console.log('Waiting for Supabase to initialize...');
         await new Promise(resolve => setTimeout(resolve, 100));
         retries++;
@@ -660,10 +860,29 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (currentPage.includes('admin-dashboard.html')) {
         loadDashboard();
     } else if (currentPage.includes('admin-products.html')) {
+        console.log('Admin Products page detected');
+        console.log('Testing Supabase connection...');
+
+        try {
+            const { data: testData, error: testError } = await window.supabase
+                .from('products')
+                .select('count');
+            console.log('Supabase connection test:', { testData, testError });
+        } catch (e) {
+            console.error('Supabase connection test failed:', e);
+        }
+        
         console.log('Loading products table...');
         await loadProductsTable();
     } else if (currentPage.includes('admin-orders.html')) {
         loadOrdersTable();
+    } else if (currentPage.includes('admin-add-product.html')) {
+        console.log('Admin Add Product page detected');
+        console.log('Loading vendors dropdown...');
+        await loadVendorsDropdown();
+        console.log('Loading categories dropdown...');
+        await loadCategoriesDropdown();
+        console.log('Dropdowns loaded');
     }
 });
 
@@ -841,8 +1060,7 @@ if (window.location.pathname.includes('admin-add-product.html')) {
         initializeCategories();
         loadCategoriesDropdown();
         displayCategoriesList();
-        
-        // Wait for Supabase to initialize
+
         let retries = 0;
         while (typeof window.supabase === 'undefined' && retries < 20) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -878,7 +1096,7 @@ if (window.location.pathname.includes('admin-add-product.html')) {
 function initializeVendors() {
     if (!localStorage.getItem('vendors')) {
         const defaultVendors = [
-            { id: 1, name: "CB Organic Farm", email: "vendor@cb.com", password: "vendor123", phone: "9876543210", status: "active" }
+            { id: 1, name: "Gousamhitha Farm", email: "vendor@gousamhitha.com", password: "vendor123", phone: "9876543210", status: "active" }
         ];
         localStorage.setItem('vendors', JSON.stringify(defaultVendors));
     }
@@ -1491,73 +1709,6 @@ handleAddProduct = function(event) {
         window.location.href = 'admin-products.html';
     }, 1500);
 };
-
-
-const originalLoadOrdersTable = loadOrdersTable;
-loadOrdersTable = function() {
-    const orders = JSON.parse(localStorage.getItem('orders')) || [];
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    const vendors = JSON.parse(localStorage.getItem('vendors')) || [];
-    const tbody = document.getElementById('orders-table-body');
-    if (!tbody) return;
-    tbody.innerHTML = orders.map((order, index) => {
-        let vendorName = 'N/A';
-        if (order.items && order.items.length > 0) {
-            const firstProduct = products.find(p => p.name === order.items[0].name);
-            if (firstProduct && firstProduct.vendor_id) {
-                const vendor = vendors.find(v => v.id === firstProduct.vendor_id);
-                if (vendor) vendorName = vendor.name;
-            }
-        }
-        const deliveryDate = order.deliveryDate || 'Not set';
-        const deliveryStatus = order.deliveryStatus || 'Pending';
-        return `
-        <tr>
-            <td>${order.id}</td>
-            <td>${order.items.map(item => `${item.name} (${item.quantity})`).join(', ')}</td>
-            <td>₹${order.total}</td>
-            <td>${vendorName}</td>
-            <td>${order.date}</td>
-            <td>
-                <input type="date" class="delivery-date-input" value="${order.deliveryDate || ''}" 
-                       onchange="updateAdminDeliveryDate(${index}, this.value)">
-            </td>
-            <td>
-                <select class="status-select" onchange="updateAdminDeliveryStatus(${index}, this.value)">
-                    <option value="Pending" ${deliveryStatus === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Processing" ${deliveryStatus === 'Processing' ? 'selected' : ''}>Processing</option>
-                    <option value="Shipped" ${deliveryStatus === 'Shipped' ? 'selected' : ''}>Shipped</option>
-                    <option value="Delivered" ${deliveryStatus === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                </select>
-            </td>
-            <td>
-                ${deliveryStatus === 'Delivered' ? 
-                    `<button class="btn-delete" onclick="deleteOrder(${index})" style="background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">Delete</button>` : 
-                    `<span style="color: #999; font-size: 0.85rem;">Available after delivery</span>`
-                }
-            </td>
-        </tr>
-    `}).join('') || '<tr><td colspan="8">No orders yet</td></tr>';
-};
-
-
-function updateAdminDeliveryDate(index, date) {
-    let orders = JSON.parse(localStorage.getItem('orders')) || [];
-    if (orders[index]) {
-        orders[index].deliveryDate = date;
-        localStorage.setItem('orders', JSON.stringify(orders));
-    }
-}
-
-
-function updateAdminDeliveryStatus(index, status) {
-    let orders = JSON.parse(localStorage.getItem('orders')) || [];
-    if (orders[index]) {
-        orders[index].deliveryStatus = status;
-        localStorage.setItem('orders', JSON.stringify(orders));
-        loadOrdersTable();
-    }
-}
 
 
 const originalLoadProductsTable = loadProductsTable;

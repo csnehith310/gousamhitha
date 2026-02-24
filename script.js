@@ -1,83 +1,85 @@
-﻿
-
-(function() {
-    const RESET_FLAG = 'products_reset_v2';
-    if (!localStorage.getItem(RESET_FLAG)) {
-        console.log('Resetting products - removing milk and curd...');
-        localStorage.removeItem('products');
-        const correctProducts = [
-            { id: 1, name: "Premium A2 Ghee", category: "Bakery & Dairy", subcategory: "Ghee", price: 899, stock: 50, image: "images/ghee.png", description: "Pure A2 cow ghee", inStock: true },
-            { id: 3, name: "Gomutra Ark", category: "Conscious Living", subcategory: "Herbal Products", price: 299, stock: 30, image: "images/gomutra.png", description: "Traditional wellness", inStock: true },
-            { id: 4, name: "Organic Dung Cakes", category: "Home Food", subcategory: "Traditional Foods", price: 199, stock: 0, image: "images/cow-dung.png", description: "Eco-friendly", inStock: false },
-            { id: 5, name: "Panchagavya Mix", category: "Special Categories", subcategory: "Combo Packs", price: 499, stock: 25, image: "images/panchagavya.png", description: "Complete wellness", inStock: true },
-            { id: 7, name: "Fresh Buttermilk", category: "Snacks & More", subcategory: "Traditional Snacks", price: 45, stock: 60, image: "images/buttermilk.png", description: "Refreshing", inStock: true },
-            { id: 8, name: "Fresh Paneer", category: "Bakery & Dairy", subcategory: "Paneer", price: 350, stock: 40, image: "images/paneer.png", description: "Fresh paneer", inStock: true },
-            { id: 9, name: "Pure Gomutra", category: "Conscious Living", subcategory: "Herbal Products", price: 150, stock: 20, image: "images/gomutra.png", description: "Pure wellness", inStock: true }
-        ];
-        localStorage.setItem('products', JSON.stringify(correctProducts));
-        localStorage.setItem(RESET_FLAG, 'true');
-        console.log('Products reset complete. Milk and Curd removed.');
-    }
-})();
 
 
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let cart = [];
 
-const productImages = {
-    1: 'images/ghee.png',
-    3: 'images/gomutra.png',
-    4: 'images/cow-dung.png',
-    5: 'images/panchagavya.png',
-    7: 'images/buttermilk.png',
-    8: 'images/paneer.png',
-    9: 'images/gomutra.png'
-};
-function updateCartCount() {
+async function loadCart() {
+    cart = await DataManager.getCart();
+    return cart;
+}
+
+async function updateCartCount() {
     const cartCount = document.querySelector('.cart-count');
     if (cartCount) {
-        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const totalItems = await DataManager.getCartCount();
         cartCount.textContent = totalItems;
     }
 }
-function addToCart(id, name, price) {
-    const existingItem = cart.find(item => item.id === id);
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({
-            id: id,
-            name: name,
-            price: price,
-            quantity: 1,
-            image: productImages[id] || 'images/placeholder.png'
-        });
+
+async function addToCart(id, name, price) {
+    try {
+        const product = { id, name, price };
+        await DataManager.addToCart(product, 1);
+        await updateCartCount();
+        showToast(`${name} added to cart!`);
+    } catch (error) {
+        showToast(error.message || 'Failed to add to cart', 'error');
     }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updateCartCount();
-    alert(`${name} added to cart!`);
 }
-function removeFromCart(id) {
-    cart = cart.filter(item => item.id !== id);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updateCartCount();
-    displayCart();
+
+async function removeFromCart(id) {
+    try {
+        await DataManager.removeFromCart(id);
+        await updateCartCount();
+        await displayCart();
+    } catch (error) {
+        showToast('Failed to remove item', 'error');
+    }
 }
-function updateQuantity(id, change) {
-    const item = cart.find(item => item.id === id);
-    if (item) {
-        item.quantity += change;
-        if (item.quantity <= 0) {
-            removeFromCart(id);
-        } else {
-            localStorage.setItem('cart', JSON.stringify(cart));
-            displayCart();
+
+async function updateQuantity(id, change) {
+    try {
+        const cartItem = cart.find(item => item.id === id);
+        if (!cartItem) return;
+        
+        const newQuantity = cartItem.quantity + change;
+        
+        if (newQuantity <= 0) {
+            await removeFromCart(id);
+            return;
         }
+        
+        if (change > 0) {
+            const { data: product, error } = await window.supabase
+                .from('products')
+                .select('stock, name')
+                .eq('id', id)
+                .single();
+            
+            if (error) {
+                showToast('Error checking product availability', 'error');
+                return;
+            }
+            
+            if (newQuantity > product.stock) {
+                showToast(`Only ${product.stock} ${product.name} available in stock!`, 'error');
+                return;
+            }
+        }
+        
+        await DataManager.updateCartItem(id, newQuantity);
+        await displayCart();
+    } catch (error) {
+        showToast('Failed to update quantity', 'error');
     }
 }
-function displayCart() {
+
+async function displayCart() {
     const cartItemsContainer = document.getElementById('cart-items');
     const cartTotalElement = document.getElementById('cart-total');
     if (!cartItemsContainer) return;
+    
+    cart = await loadCart();
+    
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = `
             <div class="empty-cart">
@@ -92,40 +94,34 @@ function displayCart() {
     let total = 0;
     cartItemsContainer.innerHTML = cart.map(item => {
         total += item.price * item.quantity;
-        const itemImage = item.image || productImages[item.id] || 'images/ghee.png';
+        const itemImage = item.image_url || item.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo Image%3C/text%3E%3C/svg%3E';
         return `
             <div class="cart-item">
-                <img src="${itemImage}" alt="${item.name}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px;">
+                <img src="${itemImage}" alt="${item.name}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo Image%3C/text%3E%3C/svg%3E'">
                 <div class="cart-item-details">
                     <h3>${item.name}</h3>
                     <p class="cart-item-price">₹${item.price}</p>
                 </div>
                 <div class="quantity-controls">
-                    <button class="quantity-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">-</button>
                     <span>${item.quantity}</span>
-                    <button class="quantity-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
                 </div>
-                <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
+                <button class="remove-btn" onclick="removeFromCart('${item.id}')">Remove</button>
             </div>
         `;
     }).join('');
     if (cartTotalElement) {
         cartTotalElement.textContent = `₹${total}`;
     }
-    let updated = false;
-    cart.forEach(item => {
-        if (!item.image && productImages[item.id]) {
-            item.image = productImages[item.id];
-            updated = true;
-        }
-    });
-    if (updated) {
-        localStorage.setItem('cart', JSON.stringify(cart));
-    }
 }
-function displayCheckoutSummary() {
+
+async function displayCheckoutSummary() {
     const summaryContainer = document.getElementById('checkout-summary');
     if (!summaryContainer) return;
+    
+    cart = await loadCart();
+    
     let total = 0;
     const itemsHTML = cart.map(item => {
         const itemTotal = item.price * item.quantity;
@@ -145,28 +141,28 @@ function displayCheckoutSummary() {
         </div>
     `;
 }
+
 function placeOrder(event) {
     event.preventDefault();
     const name = document.getElementById('name').value;
     const phone = document.getElementById('phone').value;
     const address = document.getElementById('address').value;
     if (!name || !phone || !address) {
-        alert('Please fill in all fields');
+        showToast('Please fill in all fields', 'error');
         return;
     }
-    alert(`Order placed successfully!\n\nThank you ${name}!\nWe will contact you at ${phone} for delivery confirmation.`);
-    cart = [];
-    localStorage.setItem('cart', JSON.stringify(cart));
+    showToast(`Order placed successfully!\n\nThank you ${name}!\nWe will contact you at ${phone} for delivery confirmation.`);
+    DataManager.clearCart();
     window.location.href = 'index.html';
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    updateCartCount();
+document.addEventListener('DOMContentLoaded', async function() {
+    await updateCartCount();
     if (document.getElementById('cart-items')) {
-        displayCart();
+        await displayCart();
     }
     if (document.getElementById('checkout-summary')) {
-        displayCheckoutSummary();
+        await displayCheckoutSummary();
     }
     const checkoutForm = document.getElementById('checkout-form');
     if (checkoutForm) {
@@ -210,7 +206,7 @@ function showOrders() {
     window.location.href = 'orders.html';
 }
 function showProfile() {
-    alert('Profile page - Coming soon!');
+    showToast('Profile page - Coming soon!', 'info');
     document.getElementById('profile-dropdown').classList.remove('active');
 }
 
@@ -240,7 +236,7 @@ window.onclick = function(event) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Profile button is now handled by supabase-auth.js checkAuthState()
+
 });
 
 async function displayOrders() {
@@ -266,7 +262,7 @@ async function displayOrders() {
         const { data: orders, error } = await window.supabase
             .from('orders')
             .select('*, order_items(*)')
-            .eq('customer_email', user.email)
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false });
         if (error) {
             console.error('Error fetching orders:', error);
@@ -308,7 +304,7 @@ async function displayOrders() {
                     </div>
                 `;
             }).join('');
-            const statusClass = order.status.toLowerCase();
+            const statusClass = order.order_status.toLowerCase();
             return `
                 <div class="order-card">
                     <div class="order-header">
@@ -316,7 +312,7 @@ async function displayOrders() {
                             <div class="order-id">Order ${order.id}</div>
                             <div class="order-date">${orderDate}</div>
                         </div>
-                        <div class="order-status ${statusClass}">${order.status}</div>
+                        <div class="order-status ${statusClass}">${order.order_status}</div>
                     </div>
                     <div class="order-items">
                         ${orderItemsHTML}
@@ -345,14 +341,12 @@ if (window.location.pathname.includes('orders.html')) {
     });
 }
 
-// DEPRECATED: Products are now loaded from Supabase via product-display.js
-// This function is kept for backward compatibility but should not be used
+
 function getShopProducts() {
     console.warn('getShopProducts is deprecated - use product-display.js loadProductsWithVendors instead');
     return [];
 }
 
-// DEPRECATED: Use product-display.js instead
 const shopProducts = [];
 
 let currentFilter = { category: null, subcategory: null };
@@ -382,50 +376,11 @@ function showAllProducts() {
     }
     const pageSubtext = document.querySelector('.page-header p');
     if (pageSubtext) {
-        pageSubtext.textContent = 'Explore our range of pure organic cow products';
+        pageSubtext.textContent = 'Explore our range of pure organic products';
     }
 }
 
-// DEPRECATED: This function is replaced by loadProductsWithVendors in product-display.js
-function renderShopProducts(products) {
-    console.warn('renderShopProducts is deprecated - products are now loaded via product-display.js');
-    // This function is kept for backward compatibility but does nothing
-}
 
-// DEPRECATED: These functions are now in product-display.js
-function increaseQuantity(productId, maxStock) {
-    console.warn('increaseQuantity moved to product-display.js');
-}
-function decreaseQuantity(productId) {
-    console.warn('decreaseQuantity moved to product-display.js');
-}
-function addToCartWithQuantity(productId) {
-    console.warn('addToCartWithQuantity moved to product-display.js');
-}
-    }
-}
-
-if (window.location.pathname.includes('shop.html')) {
-    document.addEventListener('DOMContentLoaded', function() {
-        renderShopProducts(shopProducts);
-        const subcategoryItems = document.querySelectorAll('.subcategory-item');
-        subcategoryItems.forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-                const category = this.dataset.category;
-                const subcategory = this.dataset.subcategory;
-                filterProductsBySubcategory(category, subcategory);
-            });
-        });
-        const categoryLinks = document.querySelectorAll('.category-link');
-        categoryLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                showAllProducts();
-            });
-        });
-    });
-}
 
 function openAdminLogin(event) {
     if (event) event.preventDefault();
@@ -439,7 +394,7 @@ function handleAdminLoginModal(event) {
     const email = document.getElementById('admin-modal-email').value;
     const password = document.getElementById('admin-modal-password').value;
     const messageEl = document.getElementById('admin-modal-message');
-    if (email === 'admin@cb.com' && password === 'admin123') {
+    if (email === 'admin@gousamhitha.com' && password === 'admin123') {
         localStorage.setItem('adminLoggedIn', 'true');
         messageEl.textContent = 'Login successful! Redirecting to admin dashboard...';
         messageEl.className = 'auth-message success';
@@ -463,38 +418,150 @@ function handleSearch() {
     const searchInput = document.querySelector('.main-search-bar');
     const searchBtn = document.querySelector('.search-btn');
     if (!searchInput || !searchBtn) return;
+
+    const autocompleteContainer = document.createElement('div');
+    autocompleteContainer.className = 'autocomplete-container';
+    autocompleteContainer.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    `;
+
+    const searchSection = searchInput.closest('.search-section');
+    if (searchSection) {
+        searchSection.style.position = 'relative';
+        searchSection.appendChild(autocompleteContainer);
+    }
+    
+    let debounceTimer;
+    
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+        
+        clearTimeout(debounceTimer);
+        
+        if (query.length < 2) {
+            autocompleteContainer.style.display = 'none';
+            return;
+        }
+        
+        debounceTimer = setTimeout(() => {
+            showAutocomplete(query, autocompleteContainer, searchInput);
+        }, 300);
+    });
+    
+    searchInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            autocompleteContainer.style.display = 'none';
+        }, 200);
+    });
+    
     searchBtn.addEventListener('click', function(e) {
         e.preventDefault();
         performSearch();
     });
+    
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
+            autocompleteContainer.style.display = 'none';
             performSearch();
         }
     });
 }
-function performSearch() {
+
+async function showAutocomplete(query, container, searchInput) {
+    try {
+        const { data: products, error } = await window.supabase
+            .from('products')
+            .select('name, category')
+            .or(`name.ilike.%${query}%,category.ilike.%${query}%`)
+            .eq('in_stock', true)
+            .limit(8);
+        
+        if (error) {
+            console.error('Autocomplete error:', error);
+            return;
+        }
+        
+        if (!products || products.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const suggestions = [...new Set(products.map(p => p.name))];
+        
+        container.innerHTML = suggestions.map(suggestion => `
+            <div class="autocomplete-item" style="
+                padding: 12px 16px;
+                cursor: pointer;
+                border-bottom: 1px solid #f0f0f0;
+                transition: background-color 0.2s;
+                font-size: 14px;
+                color: #333;
+            " onmouseover="this.style.backgroundColor='#f5f5f5'" 
+               onmouseout="this.style.backgroundColor='white'"
+               onclick="selectSuggestion('${suggestion.replace(/'/g, "\\'")}')">
+                <div style="font-weight: 500;">${suggestion}</div>
+            </div>
+        `).join('');
+        
+        container.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Autocomplete error:', error);
+    }
+}
+
+function selectSuggestion(suggestion) {
+    const searchInput = document.querySelector('.main-search-bar');
+    if (searchInput) {
+        searchInput.value = suggestion;
+        const autocompleteContainer = document.querySelector('.autocomplete-container');
+        if (autocompleteContainer) {
+            autocompleteContainer.style.display = 'none';
+        }
+        performSearch();
+    }
+}
+async function performSearch() {
     const searchInput = document.querySelector('.main-search-bar');
     const searchTerm = searchInput.value.trim().toLowerCase();
     if (!searchTerm) {
-        alert('Please enter a search term');
+        showToast('Please enter a search term', 'error');
         return;
     }
-    const products = getShopProducts();
-    const matchedProducts = products.filter(product => {
-        return product.name.toLowerCase().includes(searchTerm) ||
-               product.category.toLowerCase().includes(searchTerm) ||
-               product.subcategory.toLowerCase().includes(searchTerm) ||
-               product.description.toLowerCase().includes(searchTerm);
-    });
-    if (matchedProducts.length === 0) {
-        alert(`No products found for "${searchTerm}"`);
-        return;
+    
+    try {
+        const { data: products, error } = await window.supabase
+            .from('products')
+            .select('*')
+            .or(`name.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,subcategory.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+            .eq('in_stock', true);
+        
+        if (error) {
+            console.error('Search error:', error);
+            showToast('Error searching products. Please try again.', 'error');
+            return;
+        }
+        
+        sessionStorage.setItem('searchResults', JSON.stringify(products || []));
+        sessionStorage.setItem('searchTerm', searchTerm);
+        window.location.href = 'shop.html';
+    } catch (error) {
+        console.error('Search error:', error);
+        showToast('Error searching products. Please try again.', 'error');
     }
-    sessionStorage.setItem('searchResults', JSON.stringify(matchedProducts));
-    sessionStorage.setItem('searchTerm', searchTerm);
-    window.location.href = 'shop.html';
 }
 
 function displaySearchResults() {
@@ -502,15 +569,32 @@ function displaySearchResults() {
     const searchTerm = sessionStorage.getItem('searchTerm');
     if (searchResults && searchTerm) {
         const products = JSON.parse(searchResults);
-        renderShopProducts(products);
+        
         const pageHeader = document.querySelector('.page-header h1');
         if (pageHeader) {
             pageHeader.textContent = `Search Results for "${searchTerm}"`;
         }
-        const pageSubtext = document.querySelector('.page-header p');
-        if (pageSubtext) {
-            pageSubtext.textContent = `Found ${products.length} product(s) matching your search`;
+        
+        if (products.length === 0) {
+            const pageSubtext = document.querySelector('.page-header p');
+            if (pageSubtext) {
+                pageSubtext.textContent = `No products found matching your search`;
+            }
+            
+            if (typeof window.displayProducts === 'function') {
+                window.displayProducts([]);
+            }
+        } else {
+            const pageSubtext = document.querySelector('.page-header p');
+            if (pageSubtext) {
+                pageSubtext.textContent = `Found ${products.length} product(s) matching your search`;
+            }
+            
+            if (typeof window.displayProducts === 'function') {
+                window.displayProducts(products);
+            }
         }
+        
         sessionStorage.removeItem('searchResults');
         sessionStorage.removeItem('searchTerm');
     }

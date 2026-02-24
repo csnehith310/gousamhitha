@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.get('/', (req, res) => {
-    res.json({ message: 'CB Organic Backend Running' });
+    res.json({ message: 'Gousamhitha Backend Running' });
 });
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);

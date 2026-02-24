@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - Organic Cow Products</title>
+    <title>Checkout - Gousamhitha</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     
@@ -20,7 +22,7 @@
             <div class="nav-wrapper">
                 
                 <div class="logo-section">
-                    <div class="logo">CB</div>
+                    <div class="logo">Gousamhitha</div>
                     <div class="logo-subtitle">Organic Products Store</div>
                 </div>
 
@@ -54,7 +56,7 @@
                     <div class="hamburger-dropdown" id="hamburger-dropdown">
                         <a href="#" class="hamburger-item">
                             <img src="https://img.icons8.com/fluency/48/star--v1.png" alt="New" class="hamburger-icon-img">
-                            <span>New To CB</span>
+                            <span>New To Gousamhitha</span>
                         </a>
                         <a href="#" class="hamburger-item">
                             <img src="https://img.icons8.com/fluency/48/crown.png" alt="Club" class="hamburger-icon-img">
@@ -178,7 +180,16 @@
                         
                         <div class="form-group">
                             <label for="address">Delivery Address *</label>
-                            <textarea id="address" name="address" rows="4" required></textarea>
+                            <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                <textarea id="address" name="address" rows="4" required style="flex: 1;"></textarea>
+                                <button type="button" onclick="openMapSelector()" class="btn-map-select" style="padding: 0.8rem 1rem; background: #4a7c59; color: white; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; height: fit-content;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                    Select on Map
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -215,7 +226,7 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>About Our Store</h3>
-                    <p>We provide 100% organic cow products sourced from traditional farms, ensuring purity and quality in every product.</p>
+                    <p>We provide 100% organic products sourced from traditional farms, ensuring purity and quality in every product.</p>
                 </div>
                 <div class="footer-section">
                     <h3>Contact Info</h3>
@@ -233,7 +244,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 Organic Cow Products. All rights reserved.</p>
+                <p>&copy; 2024 Gousamhitha. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -251,7 +262,7 @@
             <form onsubmit="handleAdminLoginModal(event)">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="admin-modal-email" required placeholder="admin@cb.com">
+                    <input type="email" id="admin-modal-email" required placeholder="admin@gousamhitha.com">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
@@ -263,19 +274,47 @@
         </div>
     </div>
 
+    <div id="map-modal" class="map-modal">
+        <div class="map-modal-content">
+            <div class="map-modal-header">
+                <h3>Select Delivery Location</h3>
+                <button type="button" onclick="closeMapSelector()" class="map-close-btn">&times;</button>
+            </div>
+            <div class="map-search-container">
+                <input type="text" id="map-search" placeholder="Search for a location..." class="map-search-input">
+            </div>
+            <div id="map-container" class="map-container"></div>
+            <div class="map-modal-footer">
+                <div id="selected-address-preview" class="selected-address-preview">
+                    <small>Drag the map or tap to select your location</small>
+                </div>
+                <button type="button" onclick="confirmLocation()" class="btn-confirm-location">Confirm Location</button>
+            </div>
+        </div>
+    </div>
+
     <script src="payment.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-auth.js"></script>
+    <script src="data-manager.js"></script>
     <script src="script.js"></script>
     <script>
-        // Checkout form handler with payment integration
-        function handleCheckoutSubmit(e) {
+        let map;
+        let marker;
+        let selectedLat;
+        let selectedLng;
+        let selectedDeliveryAddress;
+
+        async function handleCheckoutSubmit(e) {
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
             
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            console.log('=== CHECKOUT SUBMIT STARTED ===');
+            
+            cart = await DataManager.getCart();
+            console.log('Cart loaded:', cart);
             
             if (cart.length === 0) {
                 alert('Your cart is empty!');
@@ -283,17 +322,20 @@
                 return false;
             }
             
-            // Validate required fields
             const name = document.getElementById('name').value.trim();
             const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
             const address = document.getElementById('address').value.trim();
             const city = document.getElementById('city').value.trim();
             const pincode = document.getElementById('pincode').value.trim();
+            const notes = document.getElementById('notes').value.trim();
             
             if (!name || !phone || !address || !city || !pincode) {
                 alert('Please fill in all required fields');
                 return false;
             }
+            
+            console.log('Form values:', { name, phone, email, address, city, pincode });
             
             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             
@@ -301,17 +343,396 @@
                 items: cart,
                 total: total,
                 customerName: name,
-                email: document.getElementById('email').value,
+                email: email || '',
                 phone: phone,
-                shippingAddress: `${address}, ${city}, ${pincode}`,
-                notes: document.getElementById('notes').value
+                address: address,
+                city: city,
+                pincode: pincode,
+                latitude: selectedLat || null,
+                longitude: selectedLng || null,
+                deliveryAddress: selectedDeliveryAddress || null,
+                notes: notes || ''
             };
             
-            // Open payment modal
+            console.log('Order data prepared:', orderData);
+            console.log('Opening payment modal...');
+            
             openCheckoutPayment(orderData);
             
             return false;
         }
+
+        async function saveOrderToDatabase(orderData, paymentMethod, paymentStatus) {
+            try {
+                console.log('=== STARTING ORDER SAVE ===');
+                console.log('Order Data:', orderData);
+                console.log('Payment Method:', paymentMethod);
+                console.log('Payment Status:', paymentStatus);
+                
+                if (!window.supabase) {
+                    throw new Error('Database not connected');
+                }
+
+                const { data: { user }, error: userError } = await window.supabase.auth.getUser();
+                console.log('Current User:', user ? user.id : 'No user logged in');
+                
+                if (userError) {
+                    console.error('User fetch error:', userError);
+                }
+                
+                for (const item of orderData.items) {
+                    if (item.id) {
+                        const { data: product, error: productError } = await window.supabase
+                            .from('products')
+                            .select('stock, name')
+                            .eq('id', item.id)
+                            .single();
+                        
+                        if (productError || !product) {
+                            throw new Error(`Product ${item.name} not found`);
+                        }
+                        
+                        if (item.quantity > product.stock) {
+                            throw new Error(`${item.name} is no longer available in the requested quantity. Only ${product.stock} left in stock.`);
+                        }
+                    }
+                }
+                
+                const customerName = String(orderData.customerName || '').trim();
+                const phone = String(orderData.phone || '').trim();
+                const address = String(orderData.address || '').trim();
+                const city = String(orderData.city || '').trim();
+                const pincode = String(orderData.pincode || '').trim();
+                
+                if (!customerName) {
+                    throw new Error('Customer name is required');
+                }
+                
+                if (!phone) {
+                    throw new Error('Phone is required');
+                }
+                
+                if (!address) {
+                    throw new Error('Address is required');
+                }
+                
+                const orderRecord = {
+                    user_id: user ? user.id : null,
+                    customer_name: customerName,
+                    phone: phone,
+                    email: orderData.email ? String(orderData.email).trim() : null,
+                    address: address,
+                    city: city || null,
+                    pincode: pincode || null,
+                    latitude: orderData.latitude || null,
+                    longitude: orderData.longitude || null,
+                    delivery_address: orderData.deliveryAddress || null,
+                    payment_method: paymentMethod || 'COD',
+                    payment_status: paymentStatus || 'pending',
+                    order_status: 'Pending',
+                    total: parseFloat(orderData.finalTotal || orderData.total),
+                    notes: orderData.notes ? String(orderData.notes).trim() : null
+                };
+
+                console.log('Saving order to database:', orderRecord);
+
+                const { data: order, error: orderError } = await window.supabase
+                    .from('orders')
+                    .insert([orderRecord])
+                    .select()
+                    .single();
+
+                if (orderError) {
+                    console.error('Order insert error:', orderError);
+                    showToast('Database error: ' + orderError.message, 'error');
+                    throw orderError;
+                }
+
+                console.log('Order saved successfully:', order);
+
+                const orderItems = orderData.items.map(item => ({
+                    order_id: order.id,
+                    product_id: item.id || null,
+                    product_name: item.name,
+                    price: parseFloat(item.price),
+                    quantity: parseInt(item.quantity),
+                    subtotal: parseFloat(item.price * item.quantity)
+                }));
+
+                console.log('Saving order items:', orderItems);
+
+                const { error: itemsError } = await window.supabase
+                    .from('order_items')
+                    .insert(orderItems);
+
+                if (itemsError) {
+                    console.error('Order items insert error:', itemsError);
+                    showToast('Failed to save order items: ' + itemsError.message, 'error');
+                    throw itemsError;
+                }
+
+                console.log('Order items saved successfully');
+
+                console.log('Reducing stock for ordered items...');
+                for (const item of orderData.items) {
+                    if (item.id) {
+                        const { data: currentProduct, error: fetchError } = await window.supabase
+                            .from('products')
+                            .select('stock')
+                            .eq('id', item.id)
+                            .single();
+                        
+                        if (fetchError) {
+                            console.error('Error fetching product stock:', fetchError);
+                            continue;
+                        }
+                        
+                        const newStock = Math.max(0, currentProduct.stock - item.quantity);
+                        
+                        console.log(`Updating stock for product ${item.id}: ${currentProduct.stock} -> ${newStock}`);
+                        
+                        const { error: stockUpdateError } = await window.supabase
+                            .from('products')
+                            .update({ 
+                                stock: newStock,
+                                in_stock: newStock > 0
+                            })
+                            .eq('id', item.id);
+                        
+                        if (stockUpdateError) {
+                            console.error('Error updating stock:', stockUpdateError);
+                        } else {
+                            console.log(`Stock updated successfully for product ${item.id}`);
+                        }
+                    }
+                }
+                console.log('Stock reduction complete');
+
+                console.log('Creating vendor payouts...');
+                const { data: insertedItems, error: fetchItemsError } = await window.supabase
+                    .from('order_items')
+                    .select('id, product_id, subtotal')
+                    .eq('order_id', order.id);
+
+                if (fetchItemsError) {
+                    console.error('Error fetching order items:', fetchItemsError);
+                } else if (insertedItems && insertedItems.length > 0) {
+                    const vendorPayouts = [];
+                    
+                    for (const item of insertedItems) {
+                        if (item.product_id) {
+                            const { data: product, error: productError } = await window.supabase
+                                .from('products')
+                                .select('vendor_id')
+                                .eq('id', item.product_id)
+                                .single();
+                            
+                            if (!productError && product && product.vendor_id) {
+                                const grossAmount = parseFloat(item.subtotal);
+                                const commissionAmount = grossAmount * 0.10;
+                                const netAmount = grossAmount - commissionAmount;
+                                
+                                vendorPayouts.push({
+                                    order_id: order.id,
+                                    order_item_id: item.id,
+                                    vendor_id: product.vendor_id,
+                                    gross_amount: grossAmount,
+                                    commission_amount: commissionAmount,
+                                    net_amount: netAmount,
+                                    payout_status: 'pending'
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (vendorPayouts.length > 0) {
+                        console.log('Creating vendor payouts:', vendorPayouts);
+                        const { error: payoutError } = await window.supabase
+                            .from('vendor_payouts')
+                            .insert(vendorPayouts);
+                        
+                        if (payoutError) {
+                            console.error('Vendor payout insert error:', payoutError);
+                        } else {
+                            console.log('Vendor payouts created successfully');
+                        }
+                    }
+                }
+
+                console.log('Clearing cart...');
+                await DataManager.clearCart();
+                
+                console.log('=== ORDER SAVE COMPLETE ===');
+                return order;
+            } catch (error) {
+                console.error('=== ORDER SAVE FAILED ===');
+                console.error('Error saving order:', error);
+                throw error;
+            }
+        }
+
+        window.saveOrderToDatabase = saveOrderToDatabase;
+
+        function openMapSelector() {
+            document.getElementById('map-modal').classList.add('active');
+            
+            setTimeout(() => {
+                if (!map) {
+                    initializeMap();
+                } else {
+                    map.invalidateSize();
+                }
+                getUserLocation();
+            }, 100);
+        }
+
+        function closeMapSelector() {
+            document.getElementById('map-modal').classList.remove('active');
+        }
+
+        function initializeMap() {
+            map = L.map('map-container').setView([20.5937, 78.9629], 5);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            const redIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            marker = L.marker([20.5937, 78.9629], {
+                icon: redIcon,
+                draggable: true
+            }).addTo(map);
+
+            marker.on('dragend', function(e) {
+                const position = marker.getLatLng();
+                selectedLat = position.lat;
+                selectedLng = position.lng;
+                updateAddressPreview(selectedLat, selectedLng);
+            });
+
+            map.on('click', function(e) {
+                selectedLat = e.latlng.lat;
+                selectedLng = e.latlng.lng;
+                marker.setLatLng([selectedLat, selectedLng]);
+                updateAddressPreview(selectedLat, selectedLng);
+            });
+        }
+
+        function getUserLocation() {
+            if (navigator.geolocation) {
+                document.getElementById('selected-address-preview').innerHTML = '<small>Getting your location...</small>';
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        selectedLat = position.coords.latitude;
+                        selectedLng = position.coords.longitude;
+                        
+                        map.setView([selectedLat, selectedLng], 15);
+                        marker.setLatLng([selectedLat, selectedLng]);
+                        
+                        updateAddressPreview(selectedLat, selectedLng);
+                    },
+                    function(error) {
+                        console.error('Geolocation error:', error);
+                        document.getElementById('selected-address-preview').innerHTML = '<small style="color: #d32f2f;">Location access denied. Please select manually on map.</small>';
+                    }
+                );
+            } else {
+                document.getElementById('selected-address-preview').innerHTML = '<small style="color: #d32f2f;">Geolocation not supported. Please select manually on map.</small>';
+            }
+        }
+
+        async function updateAddressPreview(lat, lng) {
+            document.getElementById('selected-address-preview').innerHTML = '<small>Loading address...</small>';
+            
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                const data = await response.json();
+                
+                if (data && data.address) {
+                    const addr = data.address;
+                    const addressParts = [
+                        addr.road || addr.neighbourhood || '',
+                        addr.suburb || addr.village || '',
+                        addr.city || addr.town || addr.county || '',
+                        addr.state || '',
+                        addr.postcode || ''
+                    ].filter(part => part);
+                    
+                    const fullAddress = addressParts.join(', ');
+                    document.getElementById('selected-address-preview').innerHTML = `<small><strong>Selected:</strong> ${fullAddress}</small>`;
+                } else {
+                    document.getElementById('selected-address-preview').innerHTML = `<small>Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}</small>`;
+                }
+            } catch (error) {
+                console.error('Reverse geocoding error:', error);
+                document.getElementById('selected-address-preview').innerHTML = `<small>Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}</small>`;
+            }
+        }
+
+        async function confirmLocation() {
+            if (!selectedLat || !selectedLng) {
+                showToast('Please select a location on the map', 'error');
+                return;
+            }
+
+            document.getElementById('selected-address-preview').innerHTML = '<small>Fetching address details...</small>';
+            
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${selectedLat}&lon=${selectedLng}&zoom=18&addressdetails=1`);
+                const data = await response.json();
+                
+                if (data && data.address) {
+                    const addr = data.address;
+                    const addressParts = [
+                        addr.house_number || '',
+                        addr.road || addr.neighbourhood || '',
+                        addr.suburb || addr.village || '',
+                        addr.city || addr.town || addr.county || '',
+                        addr.state || '',
+                        addr.postcode || ''
+                    ].filter(part => part);
+                    
+                    const fullAddress = addressParts.join(', ');
+                    selectedDeliveryAddress = fullAddress;
+                    document.getElementById('address').value = fullAddress;
+                    
+                    if (addr.city || addr.town) {
+                        document.getElementById('city').value = addr.city || addr.town;
+                    }
+                    
+                    if (addr.postcode) {
+                        document.getElementById('pincode').value = addr.postcode;
+                    }
+                    
+                    closeMapSelector();
+                } else {
+                    showToast('Could not fetch address. Please enter manually.', 'error');
+                    closeMapSelector();
+                }
+            } catch (error) {
+                console.error('Error fetching address:', error);
+                showToast('Could not fetch address. Please enter manually.', 'error');
+                closeMapSelector();
+            }
+        }
+
+        window.onclick = function(event) {
+            const mapModal = document.getElementById('map-modal');
+            if (event.target === mapModal) {
+                closeMapSelector();
+            }
+        };
     </script>
+    <script src="js/toast.js"></script>
 </body>
 </html>

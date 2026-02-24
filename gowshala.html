@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gowshala - CB Organic Products</title>
+    <title>Gowshala - Gousamhitha</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         .gowshala-container {
@@ -111,7 +111,7 @@
                 
                 <div class="logo-section">
                     <a href="index.html" style="text-decoration: none; color: inherit;">
-                        <div class="logo">CB</div>
+                        <div class="logo">Gousamhitha</div>
                         <div class="logo-subtitle">Organic Products Store</div>
                     </a>
                 </div>
@@ -125,7 +125,7 @@
                 
                 <div class="nav-items">
                     <a href="how-to-use.html" class="nav-item">
-                        <span class="nav-label">New To CB</span>
+                        <span class="nav-label">New To Gousamhitha</span>
                     </a>
                     <a href="orders.html" class="nav-item">
                         <span class="nav-label">My Orders</span>
@@ -200,7 +200,7 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>About Our Store</h3>
-                    <p>We provide 100% organic cow products sourced from traditional farms, ensuring purity and quality in every product.</p>
+                    <p>We provide 100% organic products sourced from traditional farms, ensuring purity and quality in every product.</p>
                 </div>
                 <div class="footer-section">
                     <h3>Contact Info</h3>
@@ -218,7 +218,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 Organic Cow Products. All rights reserved.</p>
+                <p>&copy; 2024 Gousamhitha. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -257,6 +257,7 @@
     <script src="payment.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-auth.js"></script>
+    <script src="data-manager.js"></script>
     <script src="script.js"></script>
     <script>
         function openDonationForm() {
@@ -280,7 +281,7 @@
             const amount = parseFloat(document.getElementById('donation-amount').value);
             
             if (!name || !amount || amount <= 0) {
-                alert('Please enter valid details');
+                showToast('Please enter valid details', 'error');
                 return;
             }
             
@@ -295,5 +296,6 @@
             openDonationPayment(donationData);
         }
     </script>
+    <script src="js/toast.js"></script>
 </body>
 </html>

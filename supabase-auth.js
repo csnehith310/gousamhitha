@@ -1,4 +1,4 @@
-﻿
+
 
 
 
@@ -11,8 +11,6 @@ const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 window.supabase = supabaseClient;
-
-console.log('Supabase client initialized:', supabaseClient ? 'SUCCESS' : 'FAILED');
 
 
 
@@ -170,31 +168,21 @@ async function handleSignIn(event) {
 
 async function handleSignOut() {
     try {
-        console.log('=== SIGNING OUT ===');
-        
-        // Sign out from Supabase
         const { error } = await supabaseClient.auth.signOut();
         if (error) {
             console.error('Supabase sign out error:', error);
             throw error;
         }
         
-        console.log('✓ Signed out from Supabase');
-        
-        // Clear any localStorage items
         localStorage.removeItem('adminLoggedIn');
         localStorage.removeItem('currentUser');
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('userRole');
         
-        console.log('✓ Cleared localStorage');
-        console.log('✓ Redirecting to home page...');
-        
-        // Redirect to home page
-        window.location.href = 'index.html';
+        window.location.replace('./index.html');
     } catch (error) {
         console.error('Sign out error:', error);
-        alert('Failed to sign out: ' + error.message);
+        showToast('Failed to sign out: ' + error.message, 'error');
     }
 }
 
@@ -211,13 +199,11 @@ async function checkAuthState() {
                 .eq('id', session.user.id)
                 .single();
             
-            // Check if admin user is on a customer page
             const currentPage = window.location.pathname;
             const isAdminPage = currentPage.includes('admin-');
             const isAdminUser = session.user.email === 'ruthvik@blockfortrust.com' || (profile && profile.role === 'admin');
             
             if (isAdminUser && !isAdminPage) {
-                console.log('Admin user on customer page - redirecting to admin dashboard');
                 window.location.href = 'admin-dashboard.html';
                 return;
             }
@@ -242,7 +228,6 @@ function updateAuthUI(user, profile) {
     const adminEnterBtn = document.getElementById('admin-enter-btn');
     const roleButtons = document.getElementById('role-buttons');
     if (user && profile) {
-        console.log('Updating UI for logged in user:', profile);
         if (profileBtn) {
             profileBtn.classList.add('logged-in');
             profileBtn.onclick = (e) => {
@@ -255,16 +240,13 @@ function updateAuthUI(user, profile) {
         }
         if (adminEnterBtn && roleButtons) {
             if (profile.role === 'admin') {
-                console.log('User is admin - showing admin button');
                 roleButtons.style.display = 'block';
                 adminEnterBtn.style.display = 'block';
             } else {
-                console.log('User is not admin - hiding admin button');
                 roleButtons.style.display = 'none';
                 adminEnterBtn.style.display = 'none';
             }
         }
-        console.log('UI updated - User logged in:', profile.email, 'Role:', profile.role);
     } else {
         if (profileBtn) {
             profileBtn.classList.remove('logged-in');
@@ -282,7 +264,6 @@ function updateAuthUI(user, profile) {
             roleButtons.style.display = 'none';
             adminEnterBtn.style.display = 'none';
         }
-        console.log('UI updated - User logged out');
     }
 }
 
@@ -301,7 +282,7 @@ async function checkAdminAuth() {
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
         
         if (sessionError) {
-            alert('Session error. Please login again.');
+            showToast('Session error. Please login again.', 'error');
             window.location.href = 'index.html';
             return false;
         }
@@ -326,24 +307,24 @@ async function checkAdminAuth() {
                 if (session.user.email === 'gowsamhitha123@gmail.com') {
                     return true;
                 }
-                alert('Profile not found. Please contact support.');
+                showToast('Profile not found. Please contact support.', 'error');
                 window.location.href = 'index.html';
                 return false;
             }
-            alert('Authentication error. Please try logging in again.');
+            showToast('Authentication error. Please try logging in again.', 'error');
             window.location.href = 'index.html';
             return false;
         }
         
         if (!profile || profile.role !== 'admin') {
-            alert('Access denied. Admin privileges required.');
+            showToast('Access denied. Admin privileges required.', 'error');
             window.location.href = 'index.html';
             return false;
         }
         
         return true;
     } catch (error) {
-        alert('Authentication error. Please try logging in again.');
+        showToast('Authentication error. Please try logging in again.', 'error');
         window.location.href = 'index.html';
         return false;
     }
@@ -392,19 +373,24 @@ async function handleAdminLogin(event) {
 async function adminLogout() {
     const confirmLogout = confirm('Are you sure you want to logout?');
     if (confirmLogout) {
-        console.log('Admin logout initiated...');
-        await handleSignOut();
+        try {
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) throw error;
+            
+            localStorage.clear();
+            
+            window.location.replace('./index.html');
+        } catch (error) {
+            console.error('Logout error:', error);
+            showToast('Failed to logout. Please try again.', 'error');
+        }
     }
 }
 
 
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-    console.log('Auth state changed:', event);
-    if (event === 'SIGNED_IN') {
-        console.log('User signed in:', session.user.email);
-    } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
+    if (event === 'SIGNED_OUT') {
         updateAuthUI(null, null);
     }
 });
@@ -434,7 +420,7 @@ function openAuthModal() {
     if (modal) {
         modal.style.display = 'block';
     } else {
-        // If modal doesn't exist on current page, redirect to home
+
         window.location.href = 'index.html';
     }
 }
@@ -460,50 +446,39 @@ function switchTab(tab) {
     }
 }
 async function enterAsAdmin() {
-    console.log('=== ENTER AS ADMIN CLICKED ===');
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        console.log('enterAsAdmin - Session:', session);
         
         if (!session) {
-            alert('Session expired. Please login again.');
+            showToast('Session expired. Please login again.', 'error');
             return;
         }
         
-        console.log('Checking profile for user:', session.user.id);
         const { data: profile, error: profileError } = await supabaseClient
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
             .single();
         
-        console.log('Profile data:', profile);
-        console.log('Profile error:', profileError);
-        
         if (profileError) {
-            console.error('Profile fetch error:', profileError);
-            // If profile doesn't exist or there's an error, still allow admin access for the admin email
             if (session.user.email === 'ruthvik@blockfortrust.com') {
-                console.log('Admin email detected - granting access');
                 closeAuthModal();
                 window.location.href = 'admin-dashboard.html';
                 return;
             }
-            alert('Failed to verify admin access. Please contact support.');
+            showToast('Failed to verify admin access. Please contact support.', 'error');
             return;
         }
         
         if (profile && profile.role === 'admin') {
-            console.log('Admin access granted - redirecting to dashboard');
             closeAuthModal();
             window.location.href = 'admin-dashboard.html';
         } else {
-            console.log('Access denied - role:', profile?.role);
-            alert('Access denied. Admin privileges required.');
+            showToast('Access denied. Admin privileges required.', 'error');
         }
     } catch (error) {
         console.error('Enter as admin error:', error);
-        alert('Failed to verify admin access: ' + error.message);
+        showToast('Failed to verify admin access: ' + error.message, 'error');
     }
 }
 

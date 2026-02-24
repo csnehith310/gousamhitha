@@ -17,10 +17,10 @@ function createOrderFromCart(customerInfo) {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
     const products = JSON.parse(localStorage.getItem('products')) || [];
     if (cart.length === 0) {
-        alert('Your cart is empty');
+        showToast('Your cart is empty', 'error');
         return null;
     }
-    const orderId = 'CB' + Date.now().toString().slice(-8);
+    const orderId = 'GS' + Date.now().toString().slice(-8);
     const orderDate = new Date().toISOString();
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const tax = subtotal * 0.05; 

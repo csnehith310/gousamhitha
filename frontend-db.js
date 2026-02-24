@@ -116,7 +116,7 @@ async function handleCheckout(event) {
     event.preventDefault();
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
     if (cart.length === 0) {
-        alert('Your cart is empty');
+        showToast('Your cart is empty', 'error');
         return;
     }
     const customer_email = document.getElementById('customer-email').value;
@@ -134,14 +134,14 @@ async function handleCheckout(event) {
         if (data.success) {
             localStorage.removeItem('cart');
             updateCartCount();
-            alert(`Order placed successfully! Order ID: ${data.orderId}`);
+            showToast(`Order placed successfully! Order ID: ${data.orderId}`);
             window.location.href = 'index.html';
         } else {
             throw new Error(data.error);
         }
     } catch (error) {
         console.error('Checkout error:', error);
-        alert('Failed to place order: ' + error.message);
+        showToast('Failed to place order: ' + error.message, 'error');
     }
 }
 

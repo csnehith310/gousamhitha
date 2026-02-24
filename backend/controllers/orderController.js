@@ -18,7 +18,7 @@ const createOrder = async (req, res) => {
             }
             total += product.price * item.quantity;
         }
-        const orderId = 'CB' + Date.now().toString();
+        const orderId = 'GS' + Date.now().toString();
         await client.query(
             'INSERT INTO orders (id, customer_email, total, status) VALUES ($1, $2, $3, $4)',
             [orderId, customer_email, total, 'Pending']

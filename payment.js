@@ -443,7 +443,9 @@ function openCheckoutPayment(orderData) {
     document.getElementById('order-tax').textContent = '₹' + tax.toFixed(2);
     document.getElementById('order-shipping').textContent = '₹' + shipping.toFixed(2);
     document.getElementById('order-total').textContent = '₹' + total.toFixed(2);
-    orderData.finalTotal = total;
+    
+    currentPaymentContext.data.finalTotal = total;
+    
     document.getElementById('payment-modal').style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
@@ -477,8 +479,19 @@ function closePaymentModal() {
 
 
 async function processPayment() {
-    if (!currentPaymentContext) return;
-    const selectedMethod = document.querySelector('input[name="payment-method"]:checked').value;
+    if (!currentPaymentContext) {
+        showToast('Payment session expired. Please try again.', 'error');
+        closePaymentModal();
+        return;
+    }
+    
+    const selectedMethodElement = document.querySelector('input[name="payment-method"]:checked');
+    if (!selectedMethodElement) {
+        showToast('Please select a payment method.', 'error');
+        return;
+    }
+    
+    const selectedMethod = selectedMethodElement.value;
     document.querySelector('.payment-methods-section').style.display = 'none';
     document.querySelector('.payment-sidebar-footer').style.display = 'none';
     showPaymentLoader();
@@ -495,7 +508,7 @@ async function processPayment() {
             if (currentPaymentContext.type === 'checkout') {
                 window.location.href = 'orders.html';
             } else {
-                alert('Thank you for your generous donation!');
+                showToast('Thank you for your generous donation!');
             }
         }, 2000);
     }, 2000);
@@ -517,50 +530,40 @@ function showPaymentSuccess() {
 
 
 async function processCheckoutPayment(paymentMethod) {
+    if (!currentPaymentContext || !currentPaymentContext.data) {
+        showToast('Order data is missing. Please try again.', 'error');
+        return;
+    }
+    
     const orderData = currentPaymentContext.data;
-    const orderId = 'CB' + Date.now();
-    const finalTotal = orderData.finalTotal || (orderData.total + (orderData.total * 0.05) + 50);
+    
     try {
-        const { data: { user } } = await window.supabase.auth.getUser();
-        const customerEmail = user?.email || orderData.email || 'guest@example.com';
-        const { data: orderInserted, error: orderError } = await window.supabase
-            .from('orders')
-            .insert({
-                id: orderId,
-                customer_email: customerEmail,
-                total: finalTotal,
-                status: 'Pending'
-            })
-            .select()
-            .single();
-        if (orderError) {
-            console.error('Error inserting order:', orderError);
-            alert('Failed to save order. Please try again.');
-            return;
-        }
-        const orderItems = orderData.items.map(item => ({
-            order_id: orderId,
-            product_id: item.id || null,
-            product_name: item.name,
-            quantity: item.quantity,
-            price: item.price
-        }));
-        const { error: itemsError } = await window.supabase
-            .from('order_items')
-            .insert(orderItems);
-        if (itemsError) {
-            console.error('Error inserting order items:', itemsError);
-            alert('Failed to save order items. Please try again.');
-            return;
-        }
-        console.log('Order saved successfully:', orderId);
-        localStorage.setItem('cart', JSON.stringify([]));
+        const paymentStatus = paymentMethod === 'Cash on Delivery' ? 'pending' : 'paid';
+        
+        const cleanOrderData = {
+            customerName: orderData.customerName,
+            phone: orderData.phone,
+            email: orderData.email || '',
+            address: orderData.address,
+            city: orderData.city,
+            pincode: orderData.pincode,
+            latitude: orderData.latitude,
+            longitude: orderData.longitude,
+            notes: orderData.notes || '',
+            items: orderData.items,
+            total: orderData.total,
+            finalTotal: orderData.finalTotal
+        };
+        
+        const order = await window.saveOrderToDatabase(cleanOrderData, paymentMethod, paymentStatus);
+        
         if (typeof updateCartCount === 'function') {
             updateCartCount();
         }
     } catch (error) {
         console.error('Error processing checkout:', error);
-        alert('Failed to process order. Please try again.');
+        showToast('Failed to process order: ' + error.message, 'error');
+        throw error;
     }
 }
 
@@ -583,5 +586,4 @@ function processDonationPayment(paymentMethod) {
 
 
 function initializeRazorpay(amount, orderId, callback) {
-
 }
