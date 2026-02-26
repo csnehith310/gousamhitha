@@ -164,20 +164,42 @@
             }
             
             try {
-                const { error } = await window.supabase
+                console.log('Checking authentication...');
+                const { data: { session } } = await window.supabase.auth.getSession();
+                
+                if (!session) {
+                    alert('You must be logged in to update order status. Please refresh and login again.');
+                    return;
+                }
+                
+                console.log('User authenticated:', session.user.email);
+                console.log('Attempting to update order...');
+                
+                const { data, error } = await window.supabase
                     .from('orders')
                     .update({ 
                         order_status: newStatus,
                         updated_at: new Date().toISOString()
                     })
-                    .eq('id', orderId);
+                    .eq('id', orderId)
+                    .select();
                 
                 if (error) {
-                    console.error('Error updating status:', error);
-                    alert('Failed to update delivery status: ' + error.message);
+                    console.error('Supabase error details:', error);
+                    console.error('Error code:', error.code);
+                    console.error('Error message:', error.message);
+                    console.error('Error details:', error.details);
+                    console.error('Error hint:', error.hint);
+                    
+                    if (error.code === '42501' || error.message.includes('policy')) {
+                        alert('Permission denied. Please run the FIX-ORDER-UPDATE-POLICY.sql script in Supabase SQL Editor.\n\nError: ' + error.message);
+                    } else {
+                        alert('Failed to update delivery status: ' + error.message);
+                    }
                     return;
                 }
                 
+                console.log('Update successful:', data);
                 console.log('Delivery status updated successfully');
                 
                 if (typeof showToast === 'function') {
