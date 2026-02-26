@@ -166,7 +166,10 @@
             try {
                 const { error } = await window.supabase
                     .from('orders')
-                    .update({ order_status: newStatus })
+                    .update({ 
+                        order_status: newStatus,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('id', orderId);
                 
                 if (error) {
@@ -205,6 +208,17 @@
             
             console.log('Supabase initialized, loading deliveries...');
             await loadDeliveriesTable();
+            
+            const ordersChannel = window.supabase
+                .channel('orders-changes')
+                .on('postgres_changes', 
+                    { event: 'UPDATE', schema: 'public', table: 'orders' },
+                    (payload) => {
+                        console.log('Order updated:', payload);
+                        loadDeliveriesTable();
+                    }
+                )
+                .subscribe();
         });
     </script>
 </body>
