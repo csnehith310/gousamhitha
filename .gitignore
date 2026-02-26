@@ -3,6 +3,7 @@
 backend/.env
 .env.local
 .env.production
+config.js
 
 # Node Modules
 node_modules/

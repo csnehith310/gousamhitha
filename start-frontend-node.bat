@@ -1,6 +1,9 @@
 @echo off
 echo Starting Gousamhitha Frontend Server...
 echo.
+echo Generating config.js from .env...
+node generate-config.js
+echo.
 echo Installing http-server (one-time only)...
 call npm install -g http-server
 echo.
