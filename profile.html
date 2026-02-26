@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Gousamhitha</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Profile - Gousamhitha</title>`n    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">`n    <link rel="stylesheet" href="css/responsive.css">
     
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -389,6 +389,7 @@
     </footer>
 
     <script src="config.js"></script>
+    <script src="js/error-handler.js"></script>
     <script src="supabase-auth.js"></script>
     <script src="data-manager.js"></script>
     <script>
@@ -404,33 +405,65 @@
                 
                 const user = session.user;
                 
-                // Fetch profile
-                const { data: profile } = await supabaseClient
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+                // Fetch profile - handle case where it doesn't exist
+                let profile = null;
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    if (error && error.code !== 'PGRST116') {
+                        throw error;
+                    }
+                    profile = data;
+                } catch (err) {
+                    console.log('Profile not found, creating from user data');
+                }
+                
+                // If no profile, create one from user data
+                if (!profile) {
+                    profile = {
+                        id: user.id,
+                        email: user.email,
+                        role: 'customer',
+                        created_at: user.created_at
+                    };
+                    
+                    // Try to insert into database
+                    try {
+                        await supabaseClient.from('profiles').insert(profile);
+                    } catch (err) {
+                        console.log('Could not create profile in DB');
+                    }
+                }
                 
                 // Get user metadata
-                const userName = user.user_metadata?.full_name || profile.email.split('@')[0];
+                const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
                 const mobile = user.user_metadata?.mobile || 'Not provided';
                 
                 // Update sidebar
                 document.getElementById('profile-avatar').textContent = userName.charAt(0).toUpperCase();
                 document.getElementById('profile-name-display').textContent = userName;
-                document.getElementById('profile-email-display').textContent = profile.email;
+                document.getElementById('profile-email-display').textContent = profile.email || user.email;
                 
                 // Update info section
                 document.getElementById('info-name').textContent = userName;
-                document.getElementById('info-email').textContent = profile.email;
+                document.getElementById('info-email').textContent = profile.email || user.email;
                 document.getElementById('info-mobile').textContent = mobile;
                 document.getElementById('info-role').textContent = profile.role === 'admin' ? 'Administrator' : 'Customer';
                 
                 // Format dates
-                const createdDate = new Date(profile.created_at).toLocaleDateString('en-US', { 
-                    year: 'numeric', month: 'long', day: 'numeric' 
-                });
-                document.getElementById('info-created').textContent = createdDate;
+                const createdDate = profile.created_at || user.created_at;
+                if (createdDate) {
+                    const formatted = new Date(createdDate).toLocaleDateString('en-US', { 
+                        year: 'numeric', month: 'long', day: 'numeric' 
+                    });
+                    document.getElementById('info-created').textContent = formatted;
+                } else {
+                    document.getElementById('info-created').textContent = 'Recently';
+                }
                 
                 const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('en-US', { 
                     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -438,57 +471,98 @@
                 document.getElementById('info-last-login').textContent = lastLogin;
                 
                 // Load orders
-                loadOrders(profile.email);
+                loadOrders(user.id);
                 
             } catch (error) {
                 console.error('Error loading profile:', error);
-                showToast('Failed to load profile data', 'error');
+                if (typeof showToast === 'function') {
+                    showToast('Failed to load profile data', 'error');
+                }
             }
         }
         
         // Load user orders
-        function loadOrders(email) {
-            const orders = JSON.parse(localStorage.getItem('orders')) || [];
-            const userOrders = orders.filter(order => order.customerEmail === email);
-            
-            const ordersList = document.getElementById('orders-list');
-            
-            if (userOrders.length === 0) {
-                ordersList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📦</div>
-                        <p>No orders yet</p>
-                        <p style="font-size: 14px; margin-top: 10px;">Start shopping to see your orders here!</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            ordersList.innerHTML = userOrders.map(order => `
-                <div class="order-card">
-                    <div class="order-header">
-                        <div>
-                            <div class="order-id">Order #${order.id}</div>
-                            <div class="order-date">${new Date(order.date).toLocaleDateString('en-US', { 
-                                year: 'numeric', month: 'long', day: 'numeric' 
-                            })}</div>
+        async function loadOrders(userId) {
+            try {
+                const { data: orders, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                const ordersList = document.getElementById('orders-list');
+                
+                if (!orders || orders.length === 0) {
+                    ordersList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>No orders yet</p>
+                            <p style="font-size: 14px; margin-top: 10px;">Start shopping to see your orders here!</p>
                         </div>
-                        <span class="order-status ${order.status || 'pending'}">${order.status || 'Pending'}</span>
-                    </div>
-                    <div class="order-items">
-                        ${order.items.map(item => `
-                            <div class="order-item">
-                                <span>${item.name} × ${item.quantity}</span>
-                                <span>₹${(item.price * item.quantity).toFixed(2)}</span>
+                    `;
+                    return;
+                }
+                
+                ordersList.innerHTML = orders.map(order => {
+                    // Safely parse items
+                    let items = [];
+                    try {
+                        if (typeof order.items === 'string') {
+                            items = JSON.parse(order.items);
+                        } else if (Array.isArray(order.items)) {
+                            items = order.items;
+                        }
+                    } catch (e) {
+                        console.log('Could not parse order items');
+                        items = [];
+                    }
+                    
+                    // Safely get total amount
+                    const totalAmount = order.total_amount || order.total || 0;
+                    
+                    return `
+                        <div class="order-card">
+                            <div class="order-header">
+                                <div>
+                                    <div class="order-id">Order #${order.id}</div>
+                                    <div class="order-date">${new Date(order.created_at).toLocaleDateString('en-US', { 
+                                        year: 'numeric', month: 'long', day: 'numeric' 
+                                    })}</div>
+                                </div>
+                                <span class="order-status ${order.status || 'pending'}">${order.status || 'Pending'}</span>
                             </div>
-                        `).join('')}
-                    </div>
-                    <div class="order-total">
-                        <span>Total</span>
-                        <span>₹${order.total.toFixed(2)}</span>
-                    </div>
-                </div>
-            `).join('');
+                            ${items.length > 0 ? `
+                                <div class="order-items">
+                                    ${items.map(item => `
+                                        <div class="order-item">
+                                            <span>${item.name || 'Item'} × ${item.quantity || 1}</span>
+                                            <span>₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            <div class="order-total">
+                                <span>Total</span>
+                                <span>₹${totalAmount.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.log('Error loading orders, showing empty state');
+                const ordersList = document.getElementById('orders-list');
+                if (ordersList) {
+                    ordersList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>No orders yet</p>
+                            <p style="font-size: 14px; margin-top: 10px;">Start shopping to see your orders here!</p>
+                        </div>
+                    `;
+                }
+            }
         }
         
         // Show section
@@ -510,5 +584,8 @@
         document.addEventListener('DOMContentLoaded', loadProfileData);
     </script>
     <script src="js/toast.js"></script>
+    <script src="js/add-mobile-menu.js"></script>
+    <script src="js/mobile-menu.js"></script>
+    <script src="js/lazy-load.js"></script>
 </body>
 </html>

@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4a7c59">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Gousamhitha - Pure & Natural</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="google-auth.css">
     
     
@@ -57,10 +62,30 @@
                             </svg>
                         </div>
                     </a>
+                    
+                    <button class="mobile-menu-toggle">☰</button>
                 </div>
             </div>
         </div>
     </nav>
+
+    <div class="mobile-menu-overlay"></div>
+    <div class="mobile-menu">
+        <div class="mobile-menu-header">
+            <div class="logo">Gousamhitha</div>
+            <button class="mobile-menu-close">×</button>
+        </div>
+        <div class="mobile-menu-links">
+            <a href="index.html">Home</a>
+            <a href="shop.html">Shop</a>
+            <a href="about.html">About</a>
+            <a href="gowshala.html">Gowshala</a>
+            <a href="contact.html">Contact</a>
+            <a href="how-to-use.html">How To Use</a>
+            <a href="orders.html">My Orders</a>
+            <a href="cart.html">Cart</a>
+        </div>
+    </div>
 
     
     <div class="profile-dropdown" id="profile-dropdown">
@@ -351,6 +376,7 @@
     </footer>
 
     <script src="config.js"></script>
+    <script src="js/error-handler.js"></script>
     <script src="supabase-auth.js?v=20260220"></script>
     <script src="google-auth-direct.js"></script>
     <script src="data-manager.js"></script>
@@ -358,5 +384,11 @@
     <script src="product-display.js?v=2"></script>
     <script src="script.js?v=2"></script>
     <script src="js/toast.js"></script>
+    <script src="js/mobile-menu.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js');
+        }
+    </script>
 </body>
 </html>

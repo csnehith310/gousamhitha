@@ -8,9 +8,50 @@ const SUPABASE_URL = SUPABASE_CONFIG.url;
 const SUPABASE_ANON_KEY = SUPABASE_CONFIG.anonKey;
 
 const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+        storage: {
+            getItem: (key) => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        // Remove avatar URLs from stored session
+                        if (parsed && parsed.user && parsed.user.user_metadata) {
+                            delete parsed.user.user_metadata.avatar_url;
+                            delete parsed.user.user_metadata.picture;
+                        }
+                        return JSON.stringify(parsed);
+                    } catch {
+                        return value;
+                    }
+                }
+                return value;
+            },
+            setItem: (key, value) => {
+                try {
+                    const parsed = JSON.parse(value);
+                    // Remove avatar URLs before storing
+                    if (parsed && parsed.user && parsed.user.user_metadata) {
+                        delete parsed.user.user_metadata.avatar_url;
+                        delete parsed.user.user_metadata.picture;
+                    }
+                    localStorage.setItem(key, JSON.stringify(parsed));
+                } catch {
+                    localStorage.setItem(key, value);
+                }
+            },
+            removeItem: (key) => localStorage.removeItem(key)
+        }
+    }
+});
 
 window.supabase = supabaseClient;
+window.supabaseClient = supabaseClient;
 
 
 
@@ -179,12 +220,20 @@ async function handleSignOut() {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('userRole');
         
-        window.location.replace('./index.html');
+        updateAuthUI(null, null);
+        
+        if (typeof updateCartCount === 'function') {
+            updateCartCount();
+        }
+        
+        window.location.href = 'index.html';
     } catch (error) {
         console.error('Sign out error:', error);
         showToast('Failed to sign out: ' + error.message, 'error');
     }
 }
+
+window.logout = handleSignOut;
 
 
 
@@ -193,6 +242,12 @@ async function checkAuthState() {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error) throw error;
         if (session && session.user) {
+            // Clean user metadata to prevent image loading errors
+            if (session.user.user_metadata) {
+                delete session.user.user_metadata.avatar_url;
+                delete session.user.user_metadata.picture;
+            }
+            
             const { data: profile } = await supabaseClient
                 .from('profiles')
                 .select('*')

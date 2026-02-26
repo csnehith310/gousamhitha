@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - Gousamhitha</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Checkout - Gousamhitha</title>`n    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">`n    <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -207,7 +207,7 @@
                             <textarea id="notes" name="notes" rows="3"></textarea>
                         </div>
                         
-                        <button type="button" class="btn btn-primary" style="width: 100%;" onclick="handleCheckoutSubmit(event)">Place Order</button>
+                        <button type="button" class="btn btn-primary sticky-bottom" style="width: 100%;" onclick="handleCheckoutSubmit(event)">Place Order</button>
                     </form>
                 </div>
                 
@@ -735,5 +735,8 @@
         };
     </script>
     <script src="js/toast.js"></script>
+    <script src="js/add-mobile-menu.js"></script>
+    <script src="js/mobile-menu.js"></script>
+    <script src="js/lazy-load.js"></script>
 </body>
 </html>
