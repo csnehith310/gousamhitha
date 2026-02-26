@@ -177,10 +177,7 @@
                 
                 const { data, error } = await window.supabase
                     .from('orders')
-                    .update({ 
-                        order_status: newStatus,
-                        updated_at: new Date().toISOString()
-                    })
+                    .update({ order_status: newStatus })
                     .eq('id', orderId)
                     .select();
                 
@@ -193,6 +190,8 @@
                     
                     if (error.code === '42501' || error.message.includes('policy')) {
                         alert('Permission denied. Please run the FIX-ORDER-UPDATE-POLICY.sql script in Supabase SQL Editor.\n\nError: ' + error.message);
+                    } else if (error.code === 'PGRST116') {
+                        alert('Order not found. Please refresh the page.');
                     } else {
                         alert('Failed to update delivery status: ' + error.message);
                     }
@@ -204,6 +203,8 @@
                 
                 if (typeof showToast === 'function') {
                     showToast(`Delivery status updated to ${newStatus}`, 'success');
+                } else {
+                    alert(`Delivery status updated to ${newStatus}`);
                 }
                 
                 await loadDeliveriesTable();
