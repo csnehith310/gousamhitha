@@ -22,6 +22,7 @@
                 <a href="admin-vendors.html" class="nav-link">Vendors</a>
                 <a href="admin-orders.html" class="nav-link">Orders</a>
                 <a href="admin-deliveries.html" class="nav-link active">Deliveries</a>
+                <a href="admin-delivery-settings.html" class="nav-link">Delivery Settings</a>
                 <a href="admin-payouts.html" class="nav-link">Vendor Payouts</a>
                 <a href="#" class="nav-link" onclick="adminLogout()">Logout</a>
             </nav>
@@ -41,7 +42,7 @@
                             <th>Phone</th>
                             <th>Address</th>
                             <th>Items</th>
-                            <th>Total</th>
+                            <th>Payment</th>
                             <th>Status</th>
                             <th>Location</th>
                         </tr>
@@ -109,7 +110,7 @@
                     ].filter(part => part).join(', ');
                     
                     const locationBtn = (order.latitude && order.longitude) 
-                        ? `<button class="action-btn btn-view" onclick="window.viewLocation(${order.latitude}, ${order.longitude})" style="background: #2196F3; color: white; padding: 0.4rem 0.8rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem;">📍 View Map</button>`
+                        ? `<button class="action-btn btn-view" onclick="window.viewLocation(${order.latitude}, ${order.longitude})" style="background: #2196F3; color: white; padding: 0.4rem 0.8rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem;">View Map</button>`
                         : '<span style="color: #999; font-size: 0.85rem;">No location</span>';
                     
                     const statusColor = {
@@ -118,6 +119,15 @@
                         'Shipped': '#9c27b0',
                         'Delivered': '#4caf50'
                     }[order.order_status] || '#666';
+                    
+                    const isCOD = order.payment_method === 'Cash on Delivery';
+                    const isPaid = order.payment_status === 'paid';
+                    
+                    const paymentStatusBtn = isCOD 
+                        ? `<button class="action-btn" onclick="window.updatePaymentStatus('${order.id}', '${isPaid ? 'pending' : 'paid'}')" style="background: ${isPaid ? '#4caf50' : '#ff9800'}; color: white; padding: 0.4rem 0.8rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem; margin-top: 0.3rem; width: 100%;">
+                            ${isPaid ? 'Paid' : 'Mark Paid'}
+                        </button>`
+                        : `<span style="color: #4caf50; font-size: 0.85rem;">Online Paid</span>`;
                     
                     return `
                     <tr>
@@ -134,7 +144,11 @@
                             <div style="font-size: 0.9rem;">${itemsText || 'No items'}</div>
                             <div style="font-size: 0.8rem; color: #666; margin-top: 0.3rem;">${items.length} item(s)</div>
                         </td>
-                        <td style="font-weight: 600; color: #4a7c59;">₹${order.total}</td>
+                        <td style="font-weight: 600; color: #4a7c59;">
+                            <div>₹${order.total}</div>
+                            <div style="font-size: 0.75rem; color: #666; margin-top: 0.2rem;">${order.payment_method}</div>
+                            ${paymentStatusBtn}
+                        </td>
                         <td>
                             <select class="status-select" onchange="window.updateDeliveryStatus('${order.id}', this.value)" style="padding: 0.4rem; border-radius: 5px; border: 1px solid #ddd; background: ${statusColor}15; color: ${statusColor}; font-weight: 600;">
                                 <option value="Pending" ${order.order_status === 'Pending' ? 'selected' : ''}>Pending</option>
@@ -165,7 +179,13 @@
             
             try {
                 console.log('Checking authentication...');
-                const { data: { session } } = await window.supabase.auth.getSession();
+                const { data: { session }, error: sessionError } = await window.supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('Session error:', sessionError);
+                    alert('Authentication error: ' + sessionError.message);
+                    return;
+                }
                 
                 if (!session) {
                     alert('You must be logged in to update order status. Please refresh and login again.');
@@ -173,6 +193,8 @@
                 }
                 
                 console.log('User authenticated:', session.user.email);
+                console.log('User ID:', session.user.id);
+                console.log('Session valid until:', new Date(session.expires_at * 1000).toLocaleString());
                 console.log('Attempting to update order...');
                 
                 const { data, error } = await window.supabase
@@ -182,40 +204,131 @@
                     .select();
                 
                 if (error) {
-                    console.error('Supabase error details:', error);
+                    console.error('=== SUPABASE UPDATE ERROR ===');
+                    console.error('Full error object:', JSON.stringify(error, null, 2));
                     console.error('Error code:', error.code);
                     console.error('Error message:', error.message);
                     console.error('Error details:', error.details);
                     console.error('Error hint:', error.hint);
                     
-                    if (error.code === '42501' || error.message.includes('policy')) {
-                        alert('Permission denied. Please run the FIX-ORDER-UPDATE-POLICY.sql script in Supabase SQL Editor.\n\nError: ' + error.message);
+                    let errorMsg = 'Failed to update order status.\n\n';
+                    
+                    if (error.code === '42501' || error.message.includes('policy') || error.message.includes('permission')) {
+                        errorMsg += 'PERMISSION DENIED\n\n';
+                        errorMsg += 'You need to run the SQL script to fix permissions:\n';
+                        errorMsg += '1. Open Supabase Dashboard\n';
+                        errorMsg += '2. Go to SQL Editor\n';
+                        errorMsg += '3. Run FIX-ORDER-UPDATE-POLICY.sql\n\n';
+                        errorMsg += 'Error: ' + error.message;
                     } else if (error.code === 'PGRST116') {
-                        alert('Order not found. Please refresh the page.');
+                        errorMsg += 'Order not found. Please refresh the page.';
+                    } else if (error.code === '23505') {
+                        errorMsg += 'Duplicate entry error. Please try again.';
+                    } else if (error.message.includes('JWT')) {
+                        errorMsg += 'Session expired. Please logout and login again.';
                     } else {
-                        alert('Failed to update delivery status: ' + error.message);
+                        errorMsg += 'Error Code: ' + (error.code || 'Unknown') + '\n';
+                        errorMsg += 'Message: ' + error.message;
                     }
+                    
+                    alert(errorMsg);
                     return;
                 }
                 
-                console.log('Update successful:', data);
-                console.log('Delivery status updated successfully');
+                console.log('=== UPDATE SUCCESSFUL ===');
+                console.log('Updated data:', data);
+                console.log('Number of rows updated:', data ? data.length : 0);
                 
                 if (typeof showToast === 'function') {
-                    showToast(`Delivery status updated to ${newStatus}`, 'success');
+                    showToast(`✓ Order status updated to ${newStatus}`, 'success');
                 } else {
-                    alert(`Delivery status updated to ${newStatus}`);
+                    alert(`✓ Order status updated to ${newStatus}`);
                 }
                 
                 await loadDeliveriesTable();
                 
             } catch (error) {
-                console.error('Exception in updateDeliveryStatus:', error);
-                alert('Error: ' + (error.message || 'Failed to update status'));
+                console.error('=== EXCEPTION IN UPDATE ===');
+                console.error('Exception:', error);
+                console.error('Stack trace:', error.stack);
+                alert('Unexpected error: ' + (error.message || 'Failed to update status'));
             }
         }
 
         window.updateDeliveryStatus = updateDeliveryStatus;
+
+        async function updatePaymentStatus(orderId, newStatus) {
+            console.log('=== UPDATING PAYMENT STATUS ===');
+            console.log('Order ID:', orderId);
+            console.log('New Payment Status:', newStatus);
+            
+            if (!window.supabase) {
+                alert('Database connection error. Please refresh the page.');
+                return;
+            }
+            
+            try {
+                const { data: { session }, error: sessionError } = await window.supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('Session error:', sessionError);
+                    alert('Authentication error: ' + sessionError.message);
+                    return;
+                }
+                
+                if (!session) {
+                    alert('You must be logged in to update payment status.');
+                    return;
+                }
+                
+                console.log('User authenticated:', session.user.email);
+                console.log('Attempting to update payment status...');
+                
+                const { data, error } = await window.supabase
+                    .from('orders')
+                    .update({ payment_status: newStatus })
+                    .eq('id', orderId)
+                    .select();
+                
+                if (error) {
+                    console.error('=== PAYMENT UPDATE ERROR ===');
+                    console.error('Full error:', JSON.stringify(error, null, 2));
+                    
+                    let errorMsg = 'Failed to update payment status.\n\n';
+                    
+                    if (error.code === '42501' || error.message.includes('policy')) {
+                        errorMsg += 'PERMISSION DENIED\n\n';
+                        errorMsg += 'Run FIX-ORDER-UPDATE-POLICY.sql in Supabase SQL Editor.\n\n';
+                        errorMsg += 'Error: ' + error.message;
+                    } else {
+                        errorMsg += 'Error: ' + error.message;
+                    }
+                    
+                    alert(errorMsg);
+                    return;
+                }
+                
+                console.log('=== PAYMENT UPDATE SUCCESSFUL ===');
+                console.log('Updated data:', data);
+                
+                const statusText = newStatus === 'paid' ? 'Paid' : 'Pending';
+                
+                if (typeof showToast === 'function') {
+                    showToast(`✓ Payment marked as ${statusText}`, 'success');
+                } else {
+                    alert(`✓ Payment marked as ${statusText}`);
+                }
+                
+                await loadDeliveriesTable();
+                
+            } catch (error) {
+                console.error('=== EXCEPTION IN PAYMENT UPDATE ===');
+                console.error('Exception:', error);
+                alert('Unexpected error: ' + (error.message || 'Failed to update payment status'));
+            }
+        }
+
+        window.updatePaymentStatus = updatePaymentStatus;
 
         document.addEventListener('DOMContentLoaded', async function() {
             let retries = 0;

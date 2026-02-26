@@ -298,6 +298,7 @@
     <script src="config.js"></script>
     <script src="supabase-auth.js"></script>
     <script src="data-manager.js"></script>
+    <script src="js/delivery-charges.js"></script>
     <script src="script.js"></script>
     <script>
         let map;
@@ -305,6 +306,86 @@
         let selectedLat;
         let selectedLng;
         let selectedDeliveryAddress;
+        let currentDeliveryCharge = 0;
+        let cartSubtotal = 0;
+
+        // Load cart and calculate delivery on page load
+        async function loadCheckoutSummary() {
+            const cart = await DataManager.getCart();
+            const summaryDiv = document.getElementById('checkout-summary');
+            
+            if (!cart || cart.length === 0) {
+                summaryDiv.innerHTML = '<p>Your cart is empty</p>';
+                return;
+            }
+            
+            cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            window.cartSubtotal = cartSubtotal;
+            
+            let html = '<div class="summary-items">';
+            cart.forEach(item => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                        <div>
+                            <div style="font-weight: 500;">${item.name}</div>
+                            <div style="font-size: 13px; color: #666;">Qty: ${item.quantity} × ₹${item.price}</div>
+                        </div>
+                        <div style="font-weight: 600;">₹${(item.price * item.quantity).toFixed(2)}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            html += `
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                        <span>Subtotal</span>
+                        <span id="cart-subtotal">₹${cartSubtotal.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                        <span>Delivery Charge</span>
+                        <span id="delivery-charge" style="color: #4caf50; font-weight: 600;">Enter pincode</span>
+                    </div>
+                    <div id="delivery-info-box"></div>
+                    <div style="display: flex; justify-content: space-between; padding: 15px 0; border-top: 2px solid #333; margin-top: 10px; font-size: 18px; font-weight: 700;">
+                        <span>Total</span>
+                        <span id="order-total" style="color: #4a7c59;">₹${cartSubtotal.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+            
+            summaryDiv.innerHTML = html;
+        }
+        
+        // Update delivery charge when pincode changes
+        async function updateDeliveryCharge() {
+            const pincodeInput = document.getElementById('pincode');
+            if (!pincodeInput) return;
+            
+            const pincode = pincodeInput.value.trim();
+            
+            if (pincode && pincode.length === 6) {
+                if (window.deliveryCalculator) {
+                    const deliveryInfo = await window.deliveryCalculator.updateCheckoutDelivery(pincode, cartSubtotal);
+                    currentDeliveryCharge = deliveryInfo.charge;
+                }
+            }
+        }
+        
+        // Add event listener to pincode field
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCheckoutSummary();
+            
+            const pincodeInput = document.getElementById('pincode');
+            if (pincodeInput) {
+                pincodeInput.addEventListener('blur', updateDeliveryCharge);
+                pincodeInput.addEventListener('input', function() {
+                    if (this.value.length === 6) {
+                        updateDeliveryCharge();
+                    }
+                });
+            }
+        });
 
         async function handleCheckoutSubmit(e) {
             if (e) {
@@ -338,11 +419,14 @@
             
             console.log('Form values:', { name, phone, email, address, city, pincode });
             
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = subtotal + currentDeliveryCharge;
             
             const orderData = {
                 items: cart,
                 total: total,
+                subtotal: subtotal,
+                delivery_charge: currentDeliveryCharge,
                 customerName: name,
                 email: email || '',
                 phone: phone,

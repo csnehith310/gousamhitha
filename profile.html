@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Profile - Gousamhitha</title>    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles.css">    <link rel="stylesheet" href="css/responsive.css">
+    <title>My Profile - Gousamhitha</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/responsive.css">
     
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -308,9 +309,9 @@
                 <div class="profile-email-text" id="profile-email-display">Loading...</div>
                 
                 <ul class="profile-menu">
-                    <li><a href="#" class="active" onclick="showSection('info'); return false;">📋 Personal Information</a></li>
-                    <li><a href="#" onclick="showSection('orders'); return false;">📦 Order History</a></li>
-                    <li><a href="#" onclick="handleSignOut(); return false;">🚪 Sign Out</a></li>
+                    <li><a href="#" class="active" onclick="showSection('info'); return false;">Personal Information</a></li>
+                    <li><a href="#" onclick="showSection('orders'); return false;">Order History</a></li>
+                    <li><a href="#" onclick="handleSignOut(); return false;">Sign Out</a></li>
                 </ul>
             </div>
 
@@ -352,7 +353,6 @@
                     <h2 class="section-title">Order History</h2>
                     <div class="orders-list" id="orders-list">
                         <div class="empty-state">
-                            <div class="empty-state-icon">📦</div>
                             <p>Loading your orders...</p>
                         </div>
                     </div>
@@ -392,6 +392,110 @@
     <script src="js/error-handler.js"></script>
     <script src="supabase-auth.js"></script>
     <script src="data-manager.js"></script>
+    <style>
+        .order-timeline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+        
+        .timeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+        
+        .timeline-step::after {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+        
+        .timeline-step:last-child::after {
+            display: none;
+        }
+        
+        .timeline-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            background: #e0e0e0;
+            color: #999;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s;
+        }
+        
+        .timeline-step.active .timeline-icon {
+            background: #4caf50;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0.1); }
+        }
+        
+        .timeline-step.completed .timeline-icon {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .timeline-step.completed::after {
+            background: #4caf50;
+        }
+        
+        .timeline-label {
+            font-size: 11px;
+            margin-top: 6px;
+            color: #666;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .timeline-step.active .timeline-label {
+            color: #4caf50;
+            font-weight: 600;
+        }
+        
+        .payment-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .payment-cod {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .payment-online {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
     <script>
         // Load user profile data
         async function loadProfileData() {
@@ -473,6 +577,18 @@
                 // Load orders
                 loadOrders(user.id);
                 
+                // Setup real-time subscription for order updates
+                const ordersChannel = supabaseClient
+                    .channel('profile-orders-changes')
+                    .on('postgres_changes', 
+                        { event: 'UPDATE', schema: 'public', table: 'orders' },
+                        (payload) => {
+                            console.log('Order updated:', payload);
+                            loadOrders(user.id);
+                        }
+                    )
+                    .subscribe();
+                
             } catch (error) {
                 console.error('Error loading profile:', error);
                 if (typeof showToast === 'function') {
@@ -481,12 +597,12 @@
             }
         }
         
-        // Load user orders
+        // Load user orders with timeline
         async function loadOrders(userId) {
             try {
                 const { data: orders, error } = await supabaseClient
                     .from('orders')
-                    .select('*')
+                    .select('*, order_items(*)')
                     .eq('user_id', userId)
                     .order('created_at', { ascending: false });
                 
@@ -497,7 +613,7 @@
                 if (!orders || orders.length === 0) {
                     ordersList.innerHTML = `
                         <div class="empty-state">
-                            <div class="empty-state-icon">📦</div>
+                            <div class="empty-state-icon"></div>
                             <p>No orders yet</p>
                             <p style="font-size: 14px; margin-top: 10px;">Start shopping to see your orders here!</p>
                         </div>
@@ -506,57 +622,87 @@
                 }
                 
                 ordersList.innerHTML = orders.map(order => {
-                    // Safely parse items
-                    let items = [];
-                    try {
-                        if (typeof order.items === 'string') {
-                            items = JSON.parse(order.items);
-                        } else if (Array.isArray(order.items)) {
-                            items = order.items;
-                        }
-                    } catch (e) {
-                        console.log('Could not parse order items');
-                        items = [];
-                    }
+                    const items = order.order_items || [];
+                    const orderDate = new Date(order.created_at).toLocaleString('en-IN', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    const shortId = order.id.substring(0, 8).toUpperCase();
                     
-                    // Safely get total amount
-                    const totalAmount = order.total_amount || order.total || 0;
+                    const isCOD = order.payment_method === 'Cash on Delivery';
+                    const isPaid = order.payment_status === 'paid';
+                    
+                    const statusSteps = ['Pending', 'Packed', 'Shipped', 'Delivered'];
+                    const currentIndex = statusSteps.indexOf(order.order_status);
+                    
+                    const statusColor = {
+                        'Pending': '#ff9800',
+                        'Packed': '#2196F3',
+                        'Shipped': '#9c27b0',
+                        'Delivered': '#4caf50'
+                    }[order.order_status] || '#666';
+                    
+                    const timeline = statusSteps.map((step, index) => {
+                        const isCompleted = index < currentIndex;
+                        const isActive = index === currentIndex;
+                        
+                        return `
+                            <div class="timeline-step ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}">
+                                <div class="timeline-icon"></div>
+                                <div class="timeline-label">${step}</div>
+                            </div>
+                        `;
+                    }).join('');
                     
                     return `
                         <div class="order-card">
                             <div class="order-header">
                                 <div>
-                                    <div class="order-id">Order #${order.id}</div>
-                                    <div class="order-date">${new Date(order.created_at).toLocaleDateString('en-US', { 
-                                        year: 'numeric', month: 'long', day: 'numeric' 
-                                    })}</div>
+                                    <div class="order-id">Order #${shortId}</div>
+                                    <div class="order-date">${orderDate}</div>
                                 </div>
-                                <span class="order-status ${order.status || 'pending'}">${order.status || 'Pending'}</span>
+                                <div>
+                                    <span class="order-status" style="background: ${statusColor}15; color: ${statusColor};">
+                                        ${order.order_status}
+                                    </span>
+                                    <div class="payment-badge ${isCOD ? 'payment-cod' : 'payment-online'}">
+                                        ${isCOD ? 'Cash on Delivery' : 'Online Payment'}
+                                        ${isPaid ? ' • Paid' : ''}
+                                    </div>
+                                </div>
                             </div>
+                            
+                            <div class="order-timeline">
+                                ${timeline}
+                            </div>
+                            
                             ${items.length > 0 ? `
                                 <div class="order-items">
                                     ${items.map(item => `
                                         <div class="order-item">
-                                            <span>${item.name || 'Item'} × ${item.quantity || 1}</span>
-                                            <span>₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                            <span>${item.product_name} × ${item.quantity}</span>
+                                            <span>₹${(item.price * item.quantity).toFixed(2)}</span>
                                         </div>
                                     `).join('')}
                                 </div>
                             ` : ''}
                             <div class="order-total">
-                                <span>Total</span>
-                                <span>₹${totalAmount.toFixed(2)}</span>
+                                <span>Total Amount</span>
+                                <span>₹${order.total.toFixed(2)}</span>
                             </div>
                         </div>
                     `;
                 }).join('');
             } catch (error) {
-                console.log('Error loading orders, showing empty state');
+                console.log('Error loading orders:', error);
                 const ordersList = document.getElementById('orders-list');
                 if (ordersList) {
                     ordersList.innerHTML = `
                         <div class="empty-state">
-                            <div class="empty-state-icon">📦</div>
+                            <div class="empty-state-icon"></div>
                             <p>No orders yet</p>
                             <p style="font-size: 14px; margin-top: 10px;">Start shopping to see your orders here!</p>
                         </div>
