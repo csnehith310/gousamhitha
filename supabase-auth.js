@@ -4,23 +4,20 @@
 
 
 
-// Supabase initialization - uses window.APP_CONFIG for static deployment
-// Ensure config.js loads BEFORE this file
+// Supabase initialization for Vercel production deployment
+// Requires: /js/config.js to be loaded FIRST
 
 // Fail-safe check
 if (!window.APP_CONFIG) {
-    console.error('❌ CRITICAL: window.APP_CONFIG is not defined. Make sure config.js loads first!');
+    console.error('❌ CRITICAL: window.APP_CONFIG is not defined. Make sure /js/config.js loads first!');
+    throw new Error('Configuration not loaded');
 }
 
-const SUPABASE_URL = window.APP_CONFIG ? window.APP_CONFIG.SUPABASE_URL : (SUPABASE_CONFIG ? SUPABASE_CONFIG.url : '');
-const SUPABASE_ANON_KEY = window.APP_CONFIG ? window.APP_CONFIG.SUPABASE_ANON_KEY : (SUPABASE_CONFIG ? SUPABASE_CONFIG.anonKey : '');
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error('❌ CRITICAL: Supabase credentials are missing!');
-}
-
-const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Initialize Supabase client using window.APP_CONFIG
+const supabaseClient = supabase.createClient(
+    window.APP_CONFIG.SUPABASE_URL,
+    window.APP_CONFIG.SUPABASE_ANON_KEY,
+    {
     auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -62,8 +59,11 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     }
 });
 
+// Make supabaseClient globally available
 window.supabase = supabaseClient;
 window.supabaseClient = supabaseClient;
+
+console.log('✅ Supabase client initialized successfully');
 
 
 
@@ -114,7 +114,7 @@ async function handleSignUp(event) {
                 return;
             }
             
-            const role = email === (window.APP_CONFIG ? window.APP_CONFIG.ADMIN_EMAIL : APP_CONFIG.adminEmail) ? 'admin' : 'customer';
+            const role = email === 'gowsamhitha123@gmail.com' ? 'admin' : 'customer';
             
             await supabaseClient
                 .from('profiles')
