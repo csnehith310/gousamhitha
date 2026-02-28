@@ -4,8 +4,20 @@
 
 
 
-const SUPABASE_URL = SUPABASE_CONFIG.url;
-const SUPABASE_ANON_KEY = SUPABASE_CONFIG.anonKey;
+// Supabase initialization - uses window.APP_CONFIG for static deployment
+// Ensure config.js loads BEFORE this file
+
+// Fail-safe check
+if (!window.APP_CONFIG) {
+    console.error('❌ CRITICAL: window.APP_CONFIG is not defined. Make sure config.js loads first!');
+}
+
+const SUPABASE_URL = window.APP_CONFIG ? window.APP_CONFIG.SUPABASE_URL : (SUPABASE_CONFIG ? SUPABASE_CONFIG.url : '');
+const SUPABASE_ANON_KEY = window.APP_CONFIG ? window.APP_CONFIG.SUPABASE_ANON_KEY : (SUPABASE_CONFIG ? SUPABASE_CONFIG.anonKey : '');
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('❌ CRITICAL: Supabase credentials are missing!');
+}
 
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -102,7 +114,7 @@ async function handleSignUp(event) {
                 return;
             }
             
-            const role = email === APP_CONFIG.adminEmail ? 'admin' : 'customer';
+            const role = email === (window.APP_CONFIG ? window.APP_CONFIG.ADMIN_EMAIL : APP_CONFIG.adminEmail) ? 'admin' : 'customer';
             
             await supabaseClient
                 .from('profiles')
