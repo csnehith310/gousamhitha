@@ -7,14 +7,21 @@
 // Supabase initialization for Vercel production deployment
 // Requires: /js/config.js to be loaded FIRST
 
-// Fail-safe check
+// Fail-safe check for config
 if (!window.APP_CONFIG) {
     console.error('❌ CRITICAL: window.APP_CONFIG is not defined. Make sure /js/config.js loads first!');
     throw new Error('Configuration not loaded');
 }
 
+// Fail-safe check for Supabase CDN
+if (typeof supabase === 'undefined') {
+    console.error('❌ CRITICAL: Supabase CDN not loaded. Make sure Supabase script loads before this file!');
+    throw new Error('Supabase CDN not loaded');
+}
+
 // Initialize Supabase client using window.APP_CONFIG
-const supabaseClient = supabase.createClient(
+const { createClient } = supabase;
+const supabaseClient = createClient(
     window.APP_CONFIG.SUPABASE_URL,
     window.APP_CONFIG.SUPABASE_ANON_KEY,
     {
