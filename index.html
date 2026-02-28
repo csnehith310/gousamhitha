@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="google-auth.css">
     
-    <!-- Supabase configuration - MUST load in this exact order -->
-    <script src="js/config.js?v=20260301"></script>
+    <!-- CRITICAL: Load config FIRST, then Supabase CDN -->
+    <script src="/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
 
@@ -376,9 +376,9 @@
         </div>
     </footer>
 
-    <!-- Scripts load order is critical for Supabase -->
+    <!-- Scripts: config.js already loaded in <head> -->
     <script src="js/error-handler.js"></script>
-    <script src="supabase-auth.js?v=20260301"></script>
+    <script src="supabase-auth.js"></script>
     <script src="google-auth-direct.js"></script>
     <script src="data-manager.js"></script>
     <script src="order-management.js?v=2"></script>
