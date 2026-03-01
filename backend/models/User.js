@@ -13,22 +13,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    name: {
-        type: String,
-        required: true
-    },
     role: {
         type: String,
         enum: ['customer', 'admin'],
         default: 'customer'
-    },
-    googleId: {
-        type: String,
-        unique: true,
-        sparse: true
-    },
-    mobile: String,
-    address: String
+    }
 }, {
     timestamps: true
 });
