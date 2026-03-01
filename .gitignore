@@ -3,7 +3,7 @@
 backend/.env
 .env.local
 .env.production
-config.js
+# config.js is now safe to commit (contains only public keys)
 
 # Node Modules
 node_modules/
