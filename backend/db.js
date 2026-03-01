@@ -1,35 +1,17 @@
-﻿const { createClient } = require('@supabase/supabase-js');
+// MongoDB Migration - Old Supabase db.js replaced
+// Controllers will be updated to use MongoDB models instead
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-console.log('Connected to Supabase database');
-
-const query = async (text, params) => {
-    try {
-        const { data, error } = await supabase.rpc('execute_sql', {
-            query_text: text,
-            query_params: params
-        });
-        if (error) throw error;
-        return { rows: data };
-    } catch (error) {
-        console.error('Query error:', error);
-        throw error;
+// Temporary stub to prevent errors during migration
+module.exports = {
+    query: () => {
+        throw new Error('This endpoint uses old Supabase. Please use MongoDB models.');
+    },
+    getClient: () => {
+        throw new Error('This endpoint uses old Supabase. Please use MongoDB models.');
     }
 };
 
-const getClient = () => {
-    return {
-        query: query,
-        release: () => {}
-    };
-};
-
-module.exports = {
-    query,
-    getClient,
-    supabase
-};
+// Note: Update controllers to use:
+// const Product = require('../models/Product');
+// const Order = require('../models/Order');
+// etc.
