@@ -1,5 +1,8 @@
 // Supabase Configuration for Production Deployment
 // This file MUST be loaded FIRST before any other JavaScript files
+// Version: 2.0 - Fixed duplicate config files issue
+
+console.log('🔄 Loading config.js...');
 
 window.SUPABASE_CONFIG = {
     url: "https://blsgyybaevuytmgpljyk.supabase.co",
@@ -7,3 +10,5 @@ window.SUPABASE_CONFIG = {
 };
 
 console.log('✅ SUPABASE_CONFIG loaded successfully');
+console.log('✅ Config URL:', window.SUPABASE_CONFIG.url);
+console.log('✅ Config Key exists:', !!window.SUPABASE_CONFIG.anonKey);
