@@ -4,8 +4,8 @@
 
 
 
-// Supabase initialization - uses window.SUPABASE_CONFIG from /public/config.js
-// CRITICAL: /public/config.js MUST load before this file
+// Supabase initialization - uses window.SUPABASE_CONFIG from /config.js
+// CRITICAL: /config.js MUST load before this file in <head> section
 
 // Fail-safe check for config
 if (!window.SUPABASE_CONFIG) {
