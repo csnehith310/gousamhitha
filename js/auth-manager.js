@@ -1,14 +1,12 @@
-// Authentication Manager - Token in sessionStorage (cleared on browser close)
+// Authentication Manager - Uses HTTP-only cookies (set by backend)
 // User data fetched from API (not stored locally)
 
 class AuthManager {
     constructor() {
-        // Restore token from sessionStorage if exists
-        this.token = sessionStorage.getItem('auth_token') || null;
         this.user = null;
         this.API_URL = 'http://localhost:5000/api';
         
-        console.log('Auth Manager initialized. Token:', this.token ? 'Present' : 'None');
+        console.log('Auth Manager initialized. Using HTTP-only cookies for authentication.');
     }
 
     // Signup
@@ -16,6 +14,7 @@ class AuthManager {
         try {
             const response = await fetch(`${this.API_URL}/auth/signup`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -46,6 +45,7 @@ class AuthManager {
         try {
             const response = await fetch(`${this.API_URL}/auth/login`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -58,12 +58,10 @@ class AuthManager {
                 throw new Error(data.error || 'Login failed');
             }
 
-            // Store token in sessionStorage (cleared on browser close)
-            this.token = data.token;
-            sessionStorage.setItem('auth_token', data.token);
+            // Store user data in memory (token is in HTTP-only cookie)
             this.user = data.user;
             
-            console.log('Login successful. Token stored.');
+            console.log('Login successful. Token stored in HTTP-only cookie.');
 
             // Check if admin and redirect
             if (data.user.role === 'admin') {
@@ -80,14 +78,11 @@ class AuthManager {
     // Get current user
     async getCurrentUser() {
         try {
-            if (!this.token) {
-                throw new Error('No token available');
-            }
-
             const response = await fetch(`${this.API_URL}/auth/me`, {
                 method: 'GET',
+                credentials: 'include',
                 headers: {
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 }
             });
 
@@ -106,16 +101,23 @@ class AuthManager {
     }
 
     // Logout
-    logout() {
-        this.token = null;
+    async logout() {
+        try {
+            await fetch(`${this.API_URL}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        
         this.user = null;
-        sessionStorage.removeItem('auth_token');
         window.location.href = '/index.html';
     }
 
     // Check if user is logged in
     isLoggedIn() {
-        return this.token !== null;
+        return this.user !== null;
     }
 
     // Check if user is admin
@@ -123,31 +125,20 @@ class AuthManager {
         return this.user && this.user.role === 'admin';
     }
 
-    // Get auth headers for API calls
-    getAuthHeaders() {
-        if (!this.token) {
-            return {};
-        }
-        return {
-            'Authorization': `Bearer ${this.token}`
-        };
-    }
-
     // Make authenticated API call
     async authenticatedFetch(url, options = {}) {
-        const headers = {
-            ...options.headers,
-            ...this.getAuthHeaders()
-        };
-
         const response = await fetch(url, {
             ...options,
-            headers
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
 
-        // If unauthorized, clear token and redirect to login
+        // If unauthorized, clear user and redirect to login
         if (response.status === 401) {
-            this.logout();
+            this.user = null;
             throw new Error('Session expired. Please login again.');
         }
 
@@ -158,4 +149,4 @@ class AuthManager {
 // Create global instance
 window.authManager = new AuthManager();
 
-console.log('✅ Auth Manager initialized (sessionStorage for token only)');
+console.log('✅ Auth Manager initialized (HTTP-only cookies for authentication)');

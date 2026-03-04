@@ -78,16 +78,47 @@ async function handleSignUp(event) {
             throw new Error(data.error || 'Signup failed');
         }
         
-        showAuthMessage(messageEl, 'Account created! Please sign in.', 'success');
+        showAuthMessage(messageEl, 'Account created! Logging you in...', 'success');
         
-        // Clear form
-        form.reset();
-        
-        // Switch to sign in form after 2 seconds
-        setTimeout(() => {
-            document.getElementById('signup-form').style.display = 'none';
-            document.getElementById('signin-form').style.display = 'block';
-        }, 2000);
+        // Auto-login after signup
+        setTimeout(async () => {
+            try {
+                const loginResponse = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const loginData = await loginResponse.json();
+                
+                if (loginResponse.ok) {
+                    // Update auth manager
+                    if (window.authManager) {
+                        window.authManager.user = loginData.user;
+                    }
+                    
+                    // Update profile UI
+                    updateProfileUI();
+                    
+                    // Close auth modal and show profile modal
+                    closeAuthModal();
+                    showProfileModal();
+                } else {
+                    // Switch to sign in form
+                    document.getElementById('signup-form').style.display = 'none';
+                    document.getElementById('signin-form').style.display = 'block';
+                    showAuthMessage(document.getElementById('signin-message'), 'Account created! Please sign in.', 'success');
+                }
+            } catch (error) {
+                console.error('Auto-login error:', error);
+                // Switch to sign in form
+                document.getElementById('signup-form').style.display = 'none';
+                document.getElementById('signin-form').style.display = 'block';
+            }
+        }, 1000);
         
     } catch (error) {
         console.error('Signup error:', error);
@@ -147,6 +178,14 @@ async function handleSignIn(event) {
             if (data.user.role === 'admin') {
                 window.location.href = 'admin-dashboard.html';
             } else {
+                // Update auth manager with user data
+                if (window.authManager) {
+                    window.authManager.user = data.user;
+                }
+                
+                // Update profile UI
+                updateProfileUI();
+                
                 // Close auth modal and show profile modal
                 closeAuthModal();
                 showProfileModal();
@@ -239,8 +278,22 @@ function updateProfileUI() {
 
 // Attach profile button click handler
 function attachProfileClickHandler() {
-    // Removed - using simple href link instead
-    console.log('Profile button uses direct href link to profile.html');
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) {
+        profileBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Check if user is logged in
+            if (window.authManager && window.authManager.isLoggedIn()) {
+                // Show profile modal
+                showProfileModal();
+            } else {
+                // Show login modal
+                openAuthModal(e);
+            }
+        };
+    }
 }
 
 // Open auth modal
@@ -377,7 +430,15 @@ function logoutUser() {
             method: 'POST',
             credentials: 'include'
         }).then(() => {
+            // Clear auth manager
+            if (window.authManager) {
+                window.authManager.logout();
+            }
             closeProfileModal();
+            updateProfileUI();
+            window.location.href = 'index.html';
+        }).catch(error => {
+            console.error('Logout error:', error);
             window.location.href = 'index.html';
         });
     }
