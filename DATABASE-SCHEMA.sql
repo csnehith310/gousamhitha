@@ -1,6 +1,6 @@
 -- ============================================
 -- COMPLETE REAL-TIME E-COMMERCE DATABASE SCHEMA
--- Run this in Neon SQL Editor
+-- Run this in Nhost SQL Editor
 -- ============================================
 
 -- Drop existing tables if you want to start fresh
@@ -219,7 +219,7 @@ CREATE OR REPLACE FUNCTION update_order_status(
     p_new_status TEXT,
     p_changed_by TEXT DEFAULT 'system',
     p_notes TEXT DEFAULT NULL
-) RETURNS VOID AS $$
+) RETURNS VOID AS $
 BEGIN
     -- Update order status
     UPDATE orders 
@@ -234,11 +234,11 @@ BEGIN
     INSERT INTO order_status_history (order_id, status, changed_by, notes)
     VALUES (p_order_id, p_new_status, p_changed_by, p_notes);
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 -- Function to get user's order count
 CREATE OR REPLACE FUNCTION get_user_order_count(p_user_id UUID)
-RETURNS INTEGER AS $$
+RETURNS INTEGER AS $
 DECLARE
     order_count INTEGER;
 BEGIN
@@ -248,11 +248,11 @@ BEGIN
     
     RETURN order_count;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 -- Function to calculate order total
 CREATE OR REPLACE FUNCTION calculate_order_total(p_order_id TEXT)
-RETURNS NUMERIC AS $$
+RETURNS NUMERIC AS $
 DECLARE
     items_total NUMERIC;
     delivery_charge NUMERIC;
@@ -272,7 +272,7 @@ BEGIN
     
     RETURN final_total;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 -- ============================================
 -- 13. CREATE TRIGGERS
@@ -280,12 +280,12 @@ $$ LANGUAGE plpgsql;
 
 -- Trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users
@@ -353,45 +353,5 @@ FROM order_items oi
 LEFT JOIN products p ON oi.product_id = p.id;
 
 -- ============================================
--- 15. SAMPLE QUERIES FOR TESTING
--- ============================================
-
--- Get all orders for a specific user
--- SELECT * FROM orders WHERE customer_id = 'user-uuid-here' ORDER BY created_at DESC;
-
--- Get order details with items
--- SELECT o.*, oi.* FROM orders o
--- JOIN order_items oi ON o.id = oi.order_id
--- WHERE o.id = 'order-id-here';
-
--- Get all pending orders for admin
--- SELECT * FROM orders_with_customer WHERE status = 'Pending' ORDER BY created_at DESC;
-
--- Get order status history
--- SELECT * FROM order_status_history WHERE order_id = 'order-id-here' ORDER BY created_at DESC;
-
--- Update order status (use function)
--- SELECT update_order_status('GS1234567890', 'Confirmed', 'admin', 'Order confirmed by admin');
-
--- ============================================
 -- SCHEMA COMPLETE!
 -- ============================================
-
--- Verify tables created
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' 
-ORDER BY table_name;
-
--- Check row counts
-SELECT 
-    'users' as table_name, COUNT(*) as row_count FROM users
-UNION ALL
-SELECT 'categories', COUNT(*) FROM categories
-UNION ALL
-SELECT 'vendors', COUNT(*) FROM vendors
-UNION ALL
-SELECT 'products', COUNT(*) FROM products
-UNION ALL
-SELECT 'orders', COUNT(*) FROM orders
-UNION ALL
-SELECT 'delivery_charges', COUNT(*) FROM delivery_charges;
