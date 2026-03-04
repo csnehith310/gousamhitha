@@ -1,17 +1,24 @@
 // Nhost Client Configuration
-// Replace with your Nhost credentials from dashboard
+// Configured with Nhost credentials
 
 import { NhostClient } from "@nhost/nhost-js";
 
-// Initialize Nhost client
-// Get these values from your Nhost dashboard
+// Initialize Nhost client with your project credentials
 export const nhost = new NhostClient({
-    subdomain: "YOUR_NHOST_SUBDOMAIN",  // Replace with your Nhost subdomain
-    region: "YOUR_NHOST_REGION"         // Replace with your Nhost region (e.g., "us-east-1")
+    subdomain: "gousamhitha",           // Your Nhost subdomain
+    region: "eu-central-1"              // Your Nhost region
 });
 
 // Export auth methods for convenience
 export const auth = nhost.auth;
+
+// Nhost connection details
+export const NHOST_CONFIG = {
+    subdomain: "gousamhitha",
+    region: "eu-central-1",
+    graphqlEndpoint: "https://gousamhitha.eu-central-1.nhost.run/v1/graphql",
+    backendUrl: "https://gousamhitha.eu-central-1.nhost.run"
+};
 
 // Helper function to check if user is logged in
 export function isLoggedIn() {
@@ -28,4 +35,13 @@ export function getSession() {
     return nhost.auth.getSession();
 }
 
+// Helper function to get access token
+export function getAccessToken() {
+    const session = nhost.auth.getSession();
+    return session?.accessToken || null;
+}
+
 console.log('✅ Nhost client initialized');
+console.log('📍 Subdomain: gousamhitha');
+console.log('🌍 Region: eu-central-1');
+console.log('🔗 GraphQL: https://gousamhitha.eu-central-1.nhost.run/v1/graphql');

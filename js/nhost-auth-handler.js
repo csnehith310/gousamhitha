@@ -1,9 +1,7 @@
 // Nhost Authentication Handler
 // Handles signup, signin, profile, and logout using Nhost
 
-import { nhost, auth, isLoggedIn, getCurrentUser } from './nhost-client.js';
-
-const API_URL = 'http://localhost:5000/api';
+import { nhost, auth, isLoggedIn, getCurrentUser, getAccessToken } from './nhost-client.js';
 
 // ============================================
 // SIGN UP
@@ -46,7 +44,9 @@ async function handleSignUp(event) {
             options: {
                 displayName: fullName,
                 metadata: {
-                    phone: mobile
+                    phone: mobile,
+                    firstName: fullName.split(' ')[0],
+                    lastName: fullName.split(' ').slice(1).join(' ')
                 }
             }
         });
