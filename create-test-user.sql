@@ -21,18 +21,4 @@ AND email_confirmed_at IS NULL;
 
 -- Create a new test user if needed (change email as needed)
 -- Password will be: Test@123456
--- Note: You'll need to use Supabase's signUp function normally
--- This is just to show the structure
-
--- Check all users
-SELECT 
-    id,
-    email,
-    email_confirmed_at,
-    confirmed_at,
-    created_at,
-    updated_at,
-    last_sign_in_at
-FROM auth.users
-ORDER BY created_at DESC
-LIMIT 10;
+-- Note: You'll need to use Supabase's signUp function no
