@@ -80,8 +80,8 @@ If products don't load:
 
 ### Admin Access
 
-- Email: gowsamhitha123@gmail.com
-- Password: 123456
+- Email: admin@123.com
+- Password: Srigouadhar@2026
 - Redirects to admin dashboard on login
 
 ### Database Tables Required

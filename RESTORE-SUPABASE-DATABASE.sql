@@ -308,7 +308,7 @@ BEGIN
         NEW.id,
         NEW.email,
         CASE 
-            WHEN NEW.email = 'gowsamhitha123@gmail.com' THEN 'admin'
+            WHEN NEW.email = 'admin@123.com' THEN 'admin'
             ELSE 'customer'
         END
     );

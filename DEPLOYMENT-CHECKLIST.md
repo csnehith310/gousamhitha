@@ -111,7 +111,7 @@ This page will automatically test:
    - [ ] Sign up creates new user
    - [ ] Login works
    - [ ] Profile icon redirects to profile page when logged in
-   - [ ] Admin login (gowsamhitha123@gmail.com) redirects to admin dashboard
+   - [ ] Admin login (admin@123.com) redirects to admin dashboard
 
 4. **Cart** (`/cart.html`)
    - [ ] Cart items display

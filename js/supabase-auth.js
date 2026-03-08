@@ -227,7 +227,7 @@ async function handleSignIn(event) {
         console.log('✅ Login successful');
         
         // Check if admin
-        if (email === 'gowsamhitha123@gmail.com') {
+        if (email === 'admin@123.com') {
             if (messageDiv) {
                 messageDiv.textContent = '✓ Login successful! Redirecting to admin...';
                 messageDiv.style.color = '#2e7d32';
