@@ -10,7 +10,10 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css?v=3">
     <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/mobile-menu.css">
+    <link rel="stylesheet" href="css/search-styles.css">
     <link rel="stylesheet" href="google-auth.css">
+    <script src="js/search-engine.js"></script>
 </head>
 <body>
     
@@ -24,8 +27,43 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-wrapper">
+                <!-- Mobile Top Row: Hamburger + Logo + Profile + Search Icon -->
+                <div class="mobile-top-bar">
+                    <!-- Hamburger Menu Button (LEFT) -->
+                    <button class="hamburger-menu" id="hamburger-btn" onclick="toggleHamburgerMenu(event)">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    
+                    <!-- Logo (CENTER) -->
+                    <div class="logo-section-mobile">
+                        <div class="logo">Gousamhitha</div>
+                        <div class="logo-subtitle">Organic Products Store</div>
+                    </div>
+                    
+                    <!-- Profile Icon (RIGHT) -->
+                    <a href="#" class="nav-item profile-icon-btn" id="profile-btn" style="pointer-events: auto !important; cursor: pointer !important; z-index: 9999 !important; position: relative !important;">
+                        <div class="profile-icon-placeholder" style="pointer-events: none;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M6.5 18.5C7.5 16.5 9.5 15 12 15C14.5 15 16.5 16.5 17.5 18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </a>
+                    
+                    <!-- Search Icon (RIGHT) -->
+                    <button class="mobile-search-icon" id="mobile-search-toggle">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                            <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
                 
-                <div class="logo-section">
+                <!-- Desktop Logo (Hidden on Mobile) -->
+                <div class="logo-section desktop-only">
                     <div class="logo">Gousamhitha</div>
                     <div class="logo-subtitle">Organic Products Store</div>
                 </div>
@@ -48,7 +86,7 @@
                         <span class="nav-label">Cart (<span class="cart-count">0</span>)</span>
                     </a>
                     
-                    <a href="#" class="nav-item profile-icon-btn" id="profile-btn" style="pointer-events: auto !important; cursor: pointer !important; z-index: 9999 !important; position: relative !important;">
+                    <a href="#" class="nav-item profile-icon-btn desktop-profile" id="profile-btn-desktop" style="pointer-events: auto !important; cursor: pointer !important; z-index: 9999 !important; position: relative !important;">
                         <div class="profile-icon-placeholder" style="pointer-events: none;">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
@@ -57,13 +95,39 @@
                             </svg>
                         </div>
                     </a>
-                    
-                    <button class="mobile-menu-toggle">☰</button>
                 </div>
             </div>
         </div>
     </nav>
 
+    <!-- Full-Screen Hamburger Menu Overlay -->
+    <div class="hamburger-dropdown" id="hamburger-dropdown">
+        <div class="hamburger-dropdown-inner">
+            <button class="hamburger-close-btn" onclick="toggleHamburgerMenu(event)">✕</button>
+            <a href="index.html" class="hamburger-item">
+                <img src="https://img.icons8.com/fluency/48/home.png" alt="Home" class="hamburger-icon-img">
+                <span>Home</span>
+            </a>
+            <a href="shop.html" class="hamburger-item">
+                <img src="https://img.icons8.com/fluency/48/shopping-bag.png" alt="Shop" class="hamburger-icon-img">
+                <span>Shop</span>
+            </a>
+            <a href="orders.html" class="hamburger-item">
+                <img src="https://img.icons8.com/fluency/48/package.png" alt="Orders" class="hamburger-icon-img">
+                <span>My Orders</span>
+            </a>
+            <a href="cart.html" class="hamburger-item">
+                <img src="https://img.icons8.com/fluency/48/shopping-cart.png" alt="Cart" class="hamburger-icon-img">
+                <span>Cart</span>
+            </a>
+            <a href="about.html" class="hamburger-item">
+                <img src="https://img.icons8.com/fluency/48/info.png" alt="About" class="hamburger-icon-img">
+                <span>About</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Old Mobile Menu (Keep for fallback) -->
     <div class="mobile-menu-overlay"></div>
     <div class="mobile-menu">
         <div class="mobile-menu-header">

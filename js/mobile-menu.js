@@ -16,11 +16,17 @@ function toggleHamburgerMenu(event) {
             if (hamburgerBtn) {
                 hamburgerBtn.classList.remove('active');
             }
+            // Allow body scroll
+            document.body.classList.remove('menu-open');
+            document.body.style.overflow = '';
         } else {
             hamburgerDropdown.classList.add('active');
             if (hamburgerBtn) {
                 hamburgerBtn.classList.add('active');
             }
+            // Prevent body scroll
+            document.body.classList.add('menu-open');
+            document.body.style.overflow = 'hidden';
         }
     }
 }
@@ -34,12 +40,38 @@ document.addEventListener('click', function(event) {
         if (!hamburgerBtn.contains(event.target) && !hamburgerDropdown.contains(event.target)) {
             hamburgerDropdown.classList.remove('active');
             hamburgerBtn.classList.remove('active');
+            // Allow body scroll
+            document.body.classList.remove('menu-open');
+            document.body.style.overflow = '';
         }
     }
 });
 
 // Make function globally available
 window.toggleHamburgerMenu = toggleHamburgerMenu;
+
+// Mobile Search Toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const searchToggle = document.getElementById('mobile-search-toggle');
+    const searchSection = document.querySelector('.search-section');
+    
+    if (searchToggle && searchSection) {
+        searchToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Toggle search bar visibility
+            searchSection.classList.toggle('active');
+            
+            // Focus on search input when opened
+            if (searchSection.classList.contains('active')) {
+                setTimeout(() => {
+                    searchSection.querySelector('.main-search-bar').focus();
+                }, 100);
+            }
+        });
+    }
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     const menuToggle = document.querySelector('.mobile-menu-toggle');

@@ -34,14 +34,15 @@ function initProfileButton() {
         console.log('🖱️ Profile button clicked!');
         
         // Wait for Supabase to be ready
-        if (!window.supabase) {
+        if (!window.supabase || !window.supabase.auth) {
             console.log('⏳ Waiting for Supabase...');
             setTimeout(() => newProfileBtn.click(), 500);
             return;
         }
         
-        // Check if user is logged in via Supabase
-        const { data: { user } } = await window.supabase.auth.getUser();
+        try {
+            // Check if user is logged in via Supabase
+            const { data: { user } } = await window.supabase.auth.getUser();
         
         if (user) {
             console.log('✅ User is logged in, redirecting to profile page');
@@ -61,6 +62,13 @@ function initProfileButton() {
                 }
             }
         }
+        } catch (error) {
+            console.error('❌ Error checking user status:', error);
+            // On error, show auth modal
+            if (typeof openAuthModal === 'function') {
+                openAuthModal();
+            }
+        }
     });
     
     console.log('✅ Profile button click handler attached successfully!');
@@ -75,13 +83,14 @@ window.updateProfileUI = async function() {
     if (!profileBtn) return;
     
     // Wait for Supabase
-    if (!window.supabase) {
+    if (!window.supabase || !window.supabase.auth) {
         setTimeout(updateProfileUI, 500);
         return;
     }
     
-    // Check if user is logged in via Supabase
-    const { data: { user } } = await window.supabase.auth.getUser();
+    try {
+        // Check if user is logged in via Supabase
+        const { data: { user } } = await window.supabase.auth.getUser();
     
     if (user) {
         // Get user data from users table
@@ -126,6 +135,19 @@ window.updateProfileUI = async function() {
             </div>
         `;
         console.log('ℹ️ Profile UI updated - User not logged in');
+    }
+    } catch (error) {
+        console.error('❌ Error updating profile UI:', error);
+        // Show default icon on error
+        profileBtn.innerHTML = `
+            <div class="profile-icon-placeholder">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                    <path d="M6.5 18.5C7.5 16.5 9.5 15 12 15C14.5 15 16.5 16.5 17.5 18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        `;
     }
 };
 

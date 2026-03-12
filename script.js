@@ -8,10 +8,12 @@ async function loadCart() {
 }
 
 async function updateCartCount() {
-    const cartCount = document.querySelector('.cart-count');
-    if (cartCount) {
+    const cartCountElements = document.querySelectorAll('.cart-count');
+    if (cartCountElements.length > 0) {
         const totalItems = await DataManager.getCartCount();
-        cartCount.textContent = totalItems;
+        cartCountElements.forEach(element => {
+            element.textContent = totalItems;
+        });
     }
 }
 

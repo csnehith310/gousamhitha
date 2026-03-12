@@ -114,6 +114,16 @@ input, select, textarea {
         display: block;
     }
     
+    /* HIDE category filters section on mobile */
+    .category-filters {
+        display: none !important;
+    }
+    
+    /* HIDE shop category navigation on mobile */
+    .shop-category-nav {
+        display: none !important;
+    }
+    
     .navbar .nav-wrapper {
         flex-wrap: wrap;
     }
@@ -280,6 +290,12 @@ input, select, textarea {
    MOBILE FIRST: 320px - 480px
    ======================================== */
 @media (max-width: 480px) {
+    /* HIDE category filters and shop nav on small mobile too */
+    .category-filters,
+    .shop-category-nav {
+        display: none !important;
+    }
+    
     /* Typography */
     body {
         font-size: 14px;
