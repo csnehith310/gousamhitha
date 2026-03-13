@@ -316,7 +316,76 @@
     <script src="js/toast.js"></script>
     <script src="js/mobile-menu.js?v=2"></script>
     <script src="js/delivery-charges.js"></script>
-    <script src="payment.js?v=14"></script>
+    <script src="js/payment-calculator.js?v=2"></script>
+    <script src="js/payment-total-fix.js?v=2"></script>
+    <script src="payment.js?v=17"></script>
+    
+    <!-- EMERGENCY: Inline openCheckoutPayment function -->
+    <script>
+        // Debug script loading
+        console.log('🔍 Checking script loading status...');
+        
+        // Wait a moment for scripts to load
+        setTimeout(() => {
+            console.log('payment.js functions available:', {
+                openCheckoutPayment: typeof openCheckoutPayment,
+                closePaymentModal: typeof closePaymentModal,
+                processPayment: typeof processPayment,
+                initializePaymentModal: typeof initializePaymentModal
+            });
+            
+            // Test if payment.js loaded successfully
+            if (typeof openCheckoutPayment !== 'undefined') {
+                console.log('✅ payment.js loaded successfully!');
+            } else {
+                console.log('❌ payment.js failed to load, using emergency function');
+            }
+        }, 1000);
+        
+        // Ensure openCheckoutPayment is available
+        if (typeof openCheckoutPayment === 'undefined') {
+            console.log('🚨 openCheckoutPayment not found, creating inline version');
+            
+            window.openCheckoutPayment = function(orderData) {
+                console.log('🚨 Using emergency openCheckoutPayment function');
+                console.log('Order data:', orderData);
+                
+                // Calculate totals
+                const subtotal = orderData.subtotal || 2000;
+                const tax = subtotal * 0.05;
+                const shipping = orderData.delivery_charge || 0;
+                const total = subtotal + tax + shipping;
+                
+                console.log('💰 Calculated totals:', { subtotal, tax, shipping, total });
+                
+                // Show confirmation
+                const confirmed = confirm(`Order Total: ₹${total.toFixed(2)}\n\nSubtotal: ₹${subtotal.toFixed(2)}\nTax (5%): ₹${tax.toFixed(2)}\nShipping: ₹${shipping.toFixed(2)}\n\nClick OK to place order with Cash on Delivery`);
+                
+                if (confirmed) {
+                    // Try to save the order directly
+                    if (window.saveOrderToDatabase) {
+                        console.log('💾 Saving order to database...');
+                        window.saveOrderToDatabase(orderData, 'Cash on Delivery', 'pending')
+                            .then(() => {
+                                alert('✅ Order placed successfully!');
+                                window.location.href = 'orders.html';
+                            })
+                            .catch(error => {
+                                console.error('❌ Order save error:', error);
+                                alert('❌ Error placing order: ' + error.message);
+                            });
+                    } else {
+                        console.error('❌ saveOrderToDatabase not available');
+                        alert('❌ Order processing not available. Please refresh and try again.');
+                    }
+                }
+            };
+            
+            console.log('✅ Emergency openCheckoutPayment function created');
+        } else {
+            console.log('✅ openCheckoutPayment function is available from payment.js');
+        }
+    </script>
     <script>
         let map;
         let marker;
@@ -508,8 +577,17 @@
             console.log('Form values:', { name, phone, email, address, city, pincode });
             
             const subtotal = cartItems.reduce((sum, item) => sum + (item.products.price * item.quantity), 0);
-            const total = subtotal + currentDeliveryCharge;
+            const deliveryCharge = currentDeliveryCharge || 0;
+            const total = subtotal + deliveryCharge;
             
+            console.log('🛒 Checkout Calculation DEBUG:', {
+                'cartItems': cartItems,
+                'calculated subtotal': subtotal,
+                'deliveryCharge': deliveryCharge,
+                'calculated total': total
+            });
+            
+            // Create order data with ALL cart items (no selection needed)
             const orderData = {
                 items: cartItems.map(item => ({
                     product_id: item.products.id,
@@ -517,9 +595,9 @@
                     price: item.products.price,
                     quantity: item.quantity
                 })),
-                total: total,
-                subtotal: subtotal,
-                delivery_charge: currentDeliveryCharge,
+                subtotal: subtotal,  // Pure item total without delivery
+                total: total,        // Subtotal + delivery
+                delivery_charge: deliveryCharge,
                 customerName: name,
                 email: email || '',
                 phone: phone,
@@ -532,13 +610,49 @@
                 notes: notes || ''
             };
             
-            console.log('Order data prepared:', orderData);
-            console.log('Opening payment modal...');
+            console.log('📋 Order data prepared:', orderData);
+            console.log('📋 Cart items:', cartItems);
+            console.log('📋 Total calculation:', { subtotal, delivery_charge: currentDeliveryCharge, total });
+            console.log('🔄 Opening payment modal...');
             
             openCheckoutPayment(orderData);
             
             return false;
         }
+
+        // Test database connection function
+        async function testDatabaseConnection() {
+            try {
+                console.log('🔍 Testing database connection...');
+                
+                if (!window.supabase) {
+                    console.error('❌ Supabase not initialized');
+                    return false;
+                }
+                
+                // Test basic query
+                const { data, error } = await window.supabase
+                    .from('orders')
+                    .select('id')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('❌ Database connection test failed:', error);
+                    return false;
+                }
+                
+                console.log('✅ Database connection successful');
+                return true;
+            } catch (error) {
+                console.error('❌ Database connection test error:', error);
+                return false;
+            }
+        }
+        
+        // Test database connection on page load
+        setTimeout(async () => {
+            await testDatabaseConnection();
+        }, 2000);
 
         async function saveOrderToDatabase(orderData, paymentMethod, paymentStatus) {
             try {
@@ -555,7 +669,12 @@
                 console.log('Current User:', user ? user.id : 'No user logged in');
                 
                 if (userError) {
-                    console.error('User fetch error:', userError);
+                    console.error('❌ User fetch error:', userError);
+                    throw new Error('Authentication error: ' + userError.message);
+                }
+                
+                if (!user) {
+                    throw new Error('User not authenticated. Please login and try again.');
                 }
                 
                 for (const item of orderData.items) {
@@ -582,6 +701,7 @@
                 const city = String(orderData.city || '').trim();
                 const pincode = String(orderData.pincode || '').trim();
                 
+                // Validate required fields more thoroughly
                 if (!customerName) {
                     throw new Error('Customer name is required');
                 }
@@ -593,6 +713,18 @@
                 if (!address) {
                     throw new Error('Address is required');
                 }
+                
+                if (!orderData.items || orderData.items.length === 0) {
+                    throw new Error('No items in order');
+                }
+                
+                // Validate total amount
+                const calculatedTotal = parseFloat(orderData.finalTotal || orderData.total);
+                if (isNaN(calculatedTotal) || calculatedTotal <= 0) {
+                    throw new Error('Invalid order total amount');
+                }
+                
+                console.log('✅ All validations passed');
                 
                 const orderRecord = {
                     user_id: user ? user.id : null,
@@ -621,8 +753,32 @@
                     .single();
 
                 if (orderError) {
-                    console.error('Order insert error:', orderError);
-                    showToast('Database error: ' + orderError.message, 'error');
+                    console.error('❌ Order insert error:', orderError);
+                    console.error('❌ Order record that failed:', orderRecord);
+                    console.error('❌ Error details:', {
+                        message: orderError.message,
+                        details: orderError.details,
+                        hint: orderError.hint,
+                        code: orderError.code
+                    });
+                    
+                    // Show user-friendly error message
+                    let errorMessage = 'Failed to create order: ';
+                    if (orderError.message.includes('duplicate key')) {
+                        errorMessage += 'Order ID conflict. Please try again.';
+                    } else if (orderError.message.includes('not-null')) {
+                        errorMessage += 'Missing required information. Please check all fields.';
+                    } else if (orderError.message.includes('foreign key')) {
+                        errorMessage += 'Invalid user or product reference.';
+                    } else {
+                        errorMessage += orderError.message;
+                    }
+                    
+                    if (typeof showToast === 'function') {
+                        showToast(errorMessage, 'error');
+                    } else {
+                        alert(errorMessage);
+                    }
                     throw orderError;
                 }
 

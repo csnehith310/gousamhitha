@@ -621,3 +621,120 @@
         font-size: 15px !important;
     }
 }
+
+/* Selection integration with mobile cart */
+@media (max-width: 768px) {
+    .cart-item.selection-enabled {
+        padding-left: 45px; /* Increased for checkbox */
+    }
+    
+    .cart-item-selection {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+    }
+    
+    .cart-item-checkbox {
+        width: 18px;
+        height: 18px;
+    }
+    
+    /* Selection states for mobile */
+    .cart-item.selected {
+        background-color: #ffffff;
+        border: 2px solid #4a7c59;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(74, 124, 89, 0.15);
+    }
+    
+    .cart-item:not(.selected) {
+        opacity: 0.7;
+        background-color: #f8f9fa;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cart-item.selection-enabled {
+        padding-left: 40px;
+    }
+    
+    .cart-item-selection {
+        top: 10px;
+        left: 10px;
+    }
+    
+    .cart-item-checkbox {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 360px) {
+    .cart-item.selection-enabled {
+        padding-left: 35px;
+    }
+    
+    .cart-item-selection {
+        top: 8px;
+        left: 8px;
+    }
+    
+    .cart-item-checkbox {
+        width: 14px;
+        height: 14px;
+    }
+}
+/* Force mobile checkout button visibility */
+@media (max-width: 768px) {
+    .mobile-cart-total-bar {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        bottom: 70px !important; /* Position above bottom navigation */
+    }
+    
+    .checkout-btn-mobile {
+        display: block !important;
+        width: 100% !important;
+        margin-top: 12px !important;
+    }
+    
+    /* Ensure body has bottom padding for both sticky bar and bottom nav */
+    body {
+        padding-bottom: 140px !important; /* 70px for bottom nav + 70px for checkout bar */
+    }
+}
+
+/* Hide on desktop */
+@media (min-width: 769px) {
+    .mobile-cart-total-bar {
+        display: none !important;
+    }
+}
+/* Fallback mobile checkout button */
+.fallback-mobile-checkout {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    padding: 16px;
+}
+
+@media (max-width: 768px) {
+    .fallback-mobile-checkout {
+        display: block !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .fallback-mobile-checkout {
+        display: none !important;
+    }
+}

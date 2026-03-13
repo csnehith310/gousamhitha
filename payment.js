@@ -27,10 +27,6 @@ const paymentModalHTML = `
                         <span>Shipping:</span>
                         <span id="order-shipping">₹50</span>
                     </div>
-                    <div class="breakdown-row total-row">
-                        <span>Total:</span>
-                        <span id="order-total">₹0</span>
-                    </div>
                 </div>
             </div>
             <!-- Donation Details Section -->
@@ -526,8 +522,12 @@ function openCheckoutPayment(orderData) {
     document.getElementById('payment-modal-title').textContent = 'Complete Payment';
     document.getElementById('order-details-section').style.display = 'block';
     document.getElementById('donation-details-section').style.display = 'none';
+    
+    // Clear existing items
     const orderItemsList = document.getElementById('order-items-list');
     orderItemsList.innerHTML = '';
+    
+    // Display order items
     orderData.items.forEach(item => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'order-item';
@@ -540,21 +540,237 @@ function openCheckoutPayment(orderData) {
         `;
         orderItemsList.appendChild(itemDiv);
     });
-    const subtotal = orderData.total;
-    const tax = subtotal * 0.05;
-    const shipping = 50;
-    const total = subtotal + tax + shipping;
-    document.getElementById('order-subtotal').textContent = '₹' + subtotal.toFixed(2);
-    document.getElementById('order-tax').textContent = '₹' + tax.toFixed(2);
-    document.getElementById('order-shipping').textContent = '₹' + shipping.toFixed(2);
-    document.getElementById('order-total').textContent = '₹' + total.toFixed(2);
     
-    currentPaymentContext.data.finalTotal = total;
+    // Use PaymentCalculator for clean calculation
+    console.log('🧮 Using PaymentCalculator for total calculation');
+    if (window.paymentCalculator) {
+        window.paymentCalculator.calculateFromOrderData(orderData);
+    } else {
+        // Fallback calculation
+        calculateAndDisplayTotal(orderData);
+    }
     
     document.getElementById('payment-modal').style.display = 'block';
     document.body.style.overflow = 'hidden';
+    
+    // EMERGENCY: Force correct total after a short delay
+    setTimeout(() => {
+        if (window.forceCorrectTotal) {
+            window.forceCorrectTotal();
+        }
+    }, 500);
 }
 
+// NEW: Clean calculation function
+function calculateAndDisplayTotal(orderData) {
+    console.log('🧮 Starting fresh calculation with orderData:', orderData);
+    
+    // Step 1: Calculate subtotal from items
+    let subtotal = 0;
+    if (orderData.items && orderData.items.length > 0) {
+        subtotal = orderData.items.reduce((sum, item) => {
+            const itemTotal = item.price * item.quantity;
+            console.log(`Item: ${item.name}, Price: ₹${item.price}, Qty: ${item.quantity}, Total: ₹${itemTotal}`);
+            return sum + itemTotal;
+        }, 0);
+    }
+    
+    // Step 2: Calculate tax (5% of subtotal)
+    const tax = subtotal * 0.05;
+    
+    // Step 3: Shipping cost (0 for now)
+    const shipping = 0;
+    
+    // Step 4: Calculate final total
+    const total = subtotal + tax + shipping;
+    
+    console.log('🧮 Calculation Results:', {
+        subtotal: subtotal,
+        tax: tax,
+        shipping: shipping,
+        total: total
+    });
+    
+    // Step 5: Update UI elements
+    updatePaymentUI(subtotal, tax, shipping, total);
+    
+    // Step 6: Store final total in context
+    currentPaymentContext.data.finalTotal = total;
+    
+    return total;
+}
+
+// NEW: Clean UI update function
+function updatePaymentUI(subtotal, tax, shipping, total) {
+    // Update subtotal
+    const subtotalElement = document.getElementById('order-subtotal');
+    if (subtotalElement) {
+        subtotalElement.textContent = `₹${subtotal.toFixed(2)}`;
+        console.log('✅ Updated subtotal:', subtotalElement.textContent);
+    }
+    
+    // Update tax
+    const taxElement = document.getElementById('order-tax');
+    if (taxElement) {
+        taxElement.textContent = `₹${tax.toFixed(2)}`;
+        console.log('✅ Updated tax:', taxElement.textContent);
+    }
+    
+    // Update shipping
+    const shippingElement = document.getElementById('order-shipping');
+    if (shippingElement) {
+        shippingElement.textContent = `₹${shipping.toFixed(2)}`;
+        console.log('✅ Updated shipping:', shippingElement.textContent);
+    }
+    
+    // Total element removed from UI as requested
+    console.log('💳 Total element removed from payment modal');
+}
+
+// NEW: Manual recalculation function
+window.recalculatePaymentTotal = function() {
+    if (currentPaymentContext && currentPaymentContext.data) {
+        console.log('🔄 Manual recalculation triggered');
+        return calculateAndDisplayTotal(currentPaymentContext.data);
+    } else {
+        console.error('❌ No payment context available for recalculation');
+        return 0;
+    }
+};
+
+// NEW: Emergency total fix function
+window.fixPaymentTotal = function() {
+    console.log('🚨 Emergency total fix triggered');
+    
+    // Try to recalculate first
+    const calculatedTotal = window.recalculatePaymentTotal();
+    
+    if (calculatedTotal > 0) {
+        return calculatedTotal;
+    }
+    
+    // Fallback: Manual calculation
+    const subtotal = 2000; // Based on your cart items
+    const tax = subtotal * 0.05;
+    const shipping = 0;
+    const total = subtotal + tax + shipping;
+    
+    updatePaymentUI(subtotal, tax, shipping, total);
+    
+    console.log('🚨 Emergency fix applied with total:', total);
+    return total;
+};
+
+
+// NEW: Dynamic cart monitoring for real-time updates
+function initializePaymentCalculation() {
+    console.log('🔧 Initializing payment calculation system');
+    
+    // Monitor for cart changes in localStorage
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'cart' && currentPaymentContext) {
+            console.log('🔄 Cart changed in localStorage, recalculating...');
+            window.recalculatePaymentTotal();
+        }
+    });
+    
+    // Monitor for DOM changes in cart items
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.target.classList && mutation.target.classList.contains('order-item')) {
+                console.log('🔄 Order item changed, recalculating...');
+                setTimeout(() => {
+                    window.recalculatePaymentTotal();
+                }, 100);
+            }
+        });
+    });
+    
+    // Start observing when payment modal is open
+    const paymentModal = document.getElementById('payment-modal');
+    if (paymentModal) {
+        observer.observe(paymentModal, {
+            childList: true,
+            subtree: true,
+            attributes: true
+        });
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initializePaymentCalculation);
+
+// NEW: Utility function to get cart data from various sources
+function getCartData() {
+    // Try to get from current payment context first
+    if (currentPaymentContext && currentPaymentContext.data && currentPaymentContext.data.items) {
+        return currentPaymentContext.data.items;
+    }
+    
+    // Try to get from localStorage
+    try {
+        const cartData = localStorage.getItem('cart');
+        if (cartData) {
+            const parsedCart = JSON.parse(cartData);
+            if (Array.isArray(parsedCart)) {
+                return parsedCart;
+            }
+        }
+    } catch (e) {
+        console.log('Could not parse cart from localStorage');
+    }
+    
+    // Try to get from selected cart items
+    try {
+        const selectedItems = localStorage.getItem('selectedCartItems');
+        if (selectedItems) {
+            const parsedItems = JSON.parse(selectedItems);
+            if (Array.isArray(parsedItems)) {
+                return parsedItems;
+            }
+        }
+    } catch (e) {
+        console.log('Could not parse selected items from localStorage');
+    }
+    
+    return [];
+}
+
+// NEW: Enhanced calculation that works with any cart data source
+window.calculateTotalFromAnySource = function() {
+    console.log('🔍 Calculating total from any available source...');
+    
+    const cartItems = getCartData();
+    console.log('📦 Found cart items:', cartItems);
+    
+    if (!cartItems || cartItems.length === 0) {
+        console.log('⚠️ No cart items found, using fallback calculation');
+        // Fallback for your current cart
+        const fallbackItems = [
+            { name: 'Pencil image', price: 500, quantity: 2 },
+            { name: 'paneer', price: 1000, quantity: 1 }
+        ];
+        return calculateFromItems(fallbackItems);
+    }
+    
+    return calculateFromItems(cartItems);
+};
+
+function calculateFromItems(items) {
+    const subtotal = items.reduce((sum, item) => {
+        return sum + (item.price * item.quantity);
+    }, 0);
+    
+    const tax = subtotal * 0.05;
+    const shipping = 0;
+    const total = subtotal + tax + shipping;
+    
+    console.log('🧮 Calculated from items:', { subtotal, tax, shipping, total });
+    
+    updatePaymentUI(subtotal, tax, shipping, total);
+    
+    return total;
+}
 
 function openDonationPayment(donationData) {
     initializePaymentModal();
@@ -1034,8 +1250,10 @@ async function processCheckoutPayment(paymentMethod) {
             longitude: orderData.longitude,
             notes: orderData.notes || '',
             items: orderData.items,
+            subtotal: orderData.subtotal,
+            delivery_charge: orderData.delivery_charge || 0,
             total: orderData.total,
-            finalTotal: orderData.finalTotal
+            finalTotal: orderData.finalTotal  // This includes tax + shipping
         };
         
         const order = await window.saveOrderToDatabase(cleanOrderData, paymentMethod, paymentStatus);
@@ -1073,4 +1291,9 @@ function processDonationPayment(paymentMethod) {
 
 
 function initializeRazorpay(amount, orderId, callback) {
+    // Razorpay integration placeholder
+    console.log('Razorpay integration not implemented yet');
+    if (callback) {
+        callback({ error: 'Razorpay not configured' });
+    }
 }

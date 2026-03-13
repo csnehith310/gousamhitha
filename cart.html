@@ -9,7 +9,12 @@
     <link rel="stylesheet" href="css/back-button.css">
     <link rel="stylesheet" href="css/mobile-cart.css">
     <link rel="stylesheet" href="css/bottom-nav.css">
+    <link rel="stylesheet" href="css/selective-checkout.css">
+    <link rel="stylesheet" href="css/enhanced-cart-system.css">
+    <link rel="stylesheet" href="css/working-cart-selection.css">
+    <link rel="stylesheet" href="css/mobile-checkout-force.css">
     <script src="js/back-button.js"></script>
+    <script src="js/disable-select-all.js"></script>
 </head>
 <body>
     
@@ -141,16 +146,23 @@
         </div>
     </section>
 
+    <!-- Fallback Mobile Checkout Button (always visible) -->
+    <div class="fallback-mobile-checkout" id="fallback-checkout" style="display: none;">
+        <button class="checkout-btn-mobile" onclick="proceedToCheckout()">
+            Proceed to Checkout
+        </button>
+    </div>
+
     <!-- Mobile Sticky Cart Total Bar -->
-    <div class="mobile-cart-total-bar" id="mobile-cart-total" style="display: none;">
+    <div class="mobile-cart-total-bar" id="mobile-cart-total" style="display: block !important; position: fixed; bottom: 70px; left: 0; right: 0; z-index: 1001; background: white; border-top: 1px solid #e0e0e0; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); padding: 16px;">
         <div class="cart-total-content">
             <div class="cart-total-left">
-                <div class="cart-total-items" id="mobile-total-items">3 items</div>
-                <div class="cart-total-price" id="mobile-total-price">₹450</div>
-                <div class="cart-total-savings" id="mobile-total-savings">You saved ₹50</div>
+                <div class="cart-total-items" id="mobile-total-items">Loading items...</div>
+                <div class="cart-total-price" id="mobile-total-price">₹0.00</div>
+                <div class="cart-total-savings" id="mobile-total-savings">Calculating savings...</div>
             </div>
         </div>
-        <button class="checkout-btn-mobile" onclick="proceedToCheckout()">
+        <button class="checkout-btn-mobile" onclick="proceedToCheckout()" style="width: 100%; background: #4a7c59; color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px;">
             Proceed to Checkout
         </button>
     </div>
@@ -270,5 +282,10 @@
     <script src="js/mobile-menu.js?v=2"></script>
     <script src="js/cart-handler.js?v=2"></script>
     <script src="js/mobile-cart-handler.js"></script>
+    <script src="js/selective-checkout.js"></script>
+    <script src="js/enhanced-cart-system.js"></script>
+    <script src="js/mobile-checkout-fix.js"></script>
+    <script src="js/working-cart-selection.js"></script>
+    <script src="js/remove-select-all.js"></script>
 </body>
 </html>
