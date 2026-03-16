@@ -21,7 +21,7 @@
         
         // Setup category navigation click handlers
         setupCategoryNavigation() {
-            // Handle main category links
+            // Handle main category links only (no subcategories)
             document.querySelectorAll('.category-link, .category-filter-btn').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -29,20 +29,6 @@
                     if (category) {
                         this.filterByCategory(category);
                         this.updateURL(category);
-                        this.updateActiveStates(link);
-                    }
-                });
-            });
-            
-            // Handle subcategory links
-            document.querySelectorAll('.subcategory-item').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const category = link.dataset.category;
-                    const subcategory = link.dataset.subcategory;
-                    if (category && subcategory) {
-                        this.filterBySubcategory(category, subcategory);
-                        this.updateURL(category, subcategory);
                         this.updateActiveStates(link);
                     }
                 });
@@ -63,13 +49,9 @@
         handleURLParameters() {
             const urlParams = new URLSearchParams(window.location.search);
             const category = urlParams.get('category');
-            const subcategory = urlParams.get('subcategory');
             
             if (category) {
                 this.currentCategory = category;
-                if (subcategory) {
-                    this.currentSubcategory = subcategory;
-                }
                 this.updateActiveStatesFromURL();
             }
         }
@@ -82,16 +64,6 @@
             
             await this.loadAndDisplayProducts();
             this.updatePageHeader(category);
-        }
-        
-        // Filter products by subcategory
-        async filterBySubcategory(category, subcategory) {
-            console.log('🏷️ Filtering by subcategory:', category, '>', subcategory);
-            this.currentCategory = category;
-            this.currentSubcategory = subcategory;
-            
-            await this.loadAndDisplayProducts();
-            this.updatePageHeader(category, subcategory);
         }
         
         // Load and display filtered products
@@ -123,13 +95,6 @@
                     console.log('🏷️ Products in category "' + this.currentCategory + '":', filteredProducts.length);
                 }
                 
-                if (this.currentSubcategory) {
-                    filteredProducts = filteredProducts.filter(product => 
-                        product.subcategory === this.currentSubcategory
-                    );
-                    console.log('🏷️ Products in subcategory "' + this.currentSubcategory + '":', filteredProducts.length);
-                }
-                
                 // Display filtered products
                 this.displayProducts(filteredProducts);
                 
@@ -145,9 +110,7 @@
             if (!productGrid) return;
             
             if (products.length === 0) {
-                const categoryText = this.currentSubcategory ? 
-                    `"${this.currentSubcategory}" in ${this.currentCategory}` : 
-                    `"${this.currentCategory}"`;
+                const categoryText = `"${this.currentCategory}"`;
                 
                 productGrid.innerHTML = `
                     <div class="empty-state" style="text-align: center; padding: 3rem; grid-column: 1/-1;">
@@ -222,23 +185,18 @@
         }
         
         // Update URL without page reload
-        updateURL(category, subcategory = null) {
+        updateURL(category) {
             const url = new URL(window.location);
             url.searchParams.set('category', category);
-            
-            if (subcategory) {
-                url.searchParams.set('subcategory', subcategory);
-            } else {
-                url.searchParams.delete('subcategory');
-            }
+            url.searchParams.delete('subcategory'); // Remove subcategory since we don't use it
             
             window.history.pushState({}, '', url);
         }
         
         // Update active states for navigation
         updateActiveStates(activeLink) {
-            // Remove active class from all links
-            document.querySelectorAll('.category-link, .category-filter-btn, .subcategory-item').forEach(link => {
+            // Remove active class from all category links
+            document.querySelectorAll('.category-link, .category-filter-btn').forEach(link => {
                 link.classList.remove('active');
                 link.style.background = '';
                 link.style.color = '';
@@ -255,15 +213,8 @@
         // Update active states from URL parameters
         updateActiveStatesFromURL() {
             const category = this.currentCategory;
-            const subcategory = this.currentSubcategory;
             
-            if (subcategory) {
-                // Find and activate subcategory link
-                const subcategoryLink = document.querySelector(`[data-category="${category}"][data-subcategory="${subcategory}"]`);
-                if (subcategoryLink) {
-                    this.updateActiveStates(subcategoryLink);
-                }
-            } else if (category) {
+            if (category) {
                 // Find and activate category link
                 const categoryLink = document.querySelector(`[href*="category=${encodeURIComponent(category)}"]`);
                 if (categoryLink) {
@@ -273,14 +224,10 @@
         }
         
         // Update page header based on selection
-        updatePageHeader(category, subcategory = null) {
+        updatePageHeader(category) {
             const pageHeader = document.querySelector('.page-header h1');
             if (pageHeader) {
-                if (subcategory) {
-                    pageHeader.textContent = `${subcategory} - ${category}`;
-                } else {
-                    pageHeader.textContent = category;
-                }
+                pageHeader.textContent = category;
             }
         }
         
@@ -290,10 +237,7 @@
             
             // Update title based on current selection
             if (this.currentCategory) {
-                const titleText = this.currentSubcategory ? 
-                    `${this.currentSubcategory} - ${this.currentCategory}` : 
-                    this.currentCategory;
-                document.title = `${titleText} - Gousamhitha`;
+                document.title = `${this.currentCategory} - Gousamhitha`;
             }
         }
         
