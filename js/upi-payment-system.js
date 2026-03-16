@@ -1,4 +1,4 @@
-// UPI Payment System - Admin UPI ID Integration
+// Fixed UPI Payment System - Admin UPI ID Integration
 class UPIPaymentSystem {
     constructor() {
         // Admin payment details
@@ -33,6 +33,7 @@ class UPIPaymentSystem {
                 });
             }
             
+            console.log('Calculated cart total:', total);
             return total;
         } catch (e) {
             console.warn('Error calculating cart total:', e.message);
@@ -42,101 +43,216 @@ class UPIPaymentSystem {
     
     // Generate UPI payment link
     generateUPILink(amount, transactionNote = 'Payment') {
-        const upiLink = `upi://pay?pa=${this.adminUPI}&pn=${encodeURIComponent(this.merchantName)}&am=${amount}&cu=${this.currency}&tn=${encodeURIComponent(transactionNote)}`;
+        // Ensure amount is valid
+        const validAmount = parseFloat(amount) || 0;
+        
+        if (validAmount <= 0) {
+            console.error('Invalid amount for UPI link:', amount);
+            return null;
+        }
+        
+        const upiLink = `upi://pay?pa=${this.adminUPI}&pn=${encodeURIComponent(this.merchantName)}&am=${validAmount}&cu=${this.currency}&tn=${encodeURIComponent(transactionNote)}`;
+        console.log('Generated UPI link:', upiLink);
         return upiLink;
+    }
+    
+    // Generate Paytm payment link
+    generatePaytmLink(amount) {
+        // Ensure amount is valid
+        const validAmount = parseFloat(amount) || 0;
+        
+        if (validAmount <= 0) {
+            console.error('Invalid amount for Paytm link:', amount);
+            return null;
+        }
+        
+        const paytmLink = `https://paytm.me/7893059116/${validAmount}`;
+        console.log('Generated Paytm link:', paytmLink);
+        return paytmLink;
     }
     
     // Process UPI payment for cart checkout
     processCartPayment() {
         const total = this.calculateCartTotal();
         
+        console.log('Processing cart payment with total:', total);
+        
         if (total <= 0) {
             this.showMessage('Cart is empty or invalid total amount', 'error');
             return;
         }
         
-        const upiLink = this.generateUPILink(total, 'Order Payment - Gousamhitha');
-        this.redirectToUPI(upiLink, total, 'order');
+        this.openUPIPayment(total, 'order');
     }
     
     // Process UPI payment for donations
     processDonationPayment(amount) {
-        if (!amount || amount <= 0) {
+        const validAmount = parseFloat(amount) || 0;
+        
+        console.log('Processing donation payment with amount:', validAmount);
+        
+        if (validAmount <= 0) {
             this.showMessage('Please enter a valid donation amount', 'error');
             return;
         }
         
-        const upiLink = this.generateUPILink(amount, 'Donation - Gousamhitha Gowshala');
-        this.redirectToUPI(upiLink, amount, 'donation');
+        this.openUPIPayment(validAmount, 'donation');
     }
-}
     
-    // Redirect to UPI payment
-    redirectToUPI(upiLink, amount, type) {
-        console.log('Redirecting to UPI payment:', upiLink);
+    // Main function to open UPI payment
+    openUPIPayment(amount, type = 'order') {
+        const validAmount = parseFloat(amount) || 0;
+        
+        console.log('Opening UPI payment - Amount:', validAmount, 'Type:', type);
+        
+        if (validAmount <= 0) {
+            this.showMessage('Invalid payment amount', 'error');
+            return;
+        }
+        
+        // Show payment options
+        this.showPaymentOptions(validAmount, type);
+    }
+    
+    // Show payment options (UPI or Paytm)
+    showPaymentOptions(amount, type) {
+        const message = `Choose payment method for ₹${amount}:\n\n1. UPI App (Recommended)\n2. Paytm Web\n3. Manual Payment Instructions`;
+        
+        const choice = prompt(message + '\n\nEnter 1, 2, or 3:');
+        
+        switch (choice) {
+            case '1':
+                this.redirectToUPI(amount, type);
+                break;
+            case '2':
+                this.redirectToPaytm(amount, type);
+                break;
+            case '3':
+                this.showManualPaymentInstructions(amount);
+                break;
+            default:
+                this.showMessage('Payment cancelled', 'info');
+                break;
+        }
+    }
+    
+    // Redirect to UPI app
+    redirectToUPI(amount, type) {
+        const validAmount = parseFloat(amount) || 0;
+        
+        console.log('Redirecting 
+to UPI app with amount:', validAmount);
+        
+        if (validAmount <= 0) {
+            this.showMessage('Invalid amount for UPI payment', 'error');
+            return;
+        }
+        
+        const transactionNote = type === 'donation' ? 'Donation - Gousamhitha Gowshala' : 'Order Payment - Gousamhitha';
+        const upiLink = this.generateUPILink(validAmount, transactionNote);
+        
+        if (!upiLink) {
+            this.showMessage('Failed to generate UPI link', 'error');
+            return;
+        }
         
         // Store payment details for confirmation
         const paymentData = {
-            amount: amount,
+            amount: validAmount,
             type: type,
             timestamp: new Date().toISOString(),
-            upiId: this.adminUPI
+            upiId: this.adminUPI,
+            method: 'UPI'
         };
         
         sessionStorage.setItem('pendingPayment', JSON.stringify(paymentData));
         
-        // Show payment confirmation message
-        this.showPaymentConfirmation(amount, type);
+        // Show confirmation and redirect
+        const confirmed = confirm(`You will be redirected to your UPI app to pay ₹${validAmount} to ${this.merchantName}.\n\nUPI ID: ${this.adminUPI}\nAmount: ₹${validAmount}\n\nProceed with payment?`);
         
-        // Redirect to UPI app
-        try {
-            window.location.href = upiLink;
-        } catch (e) {
-            // Fallback for browsers that don't support UPI links
-            this.showManualPaymentInstructions(amount);
+        if (confirmed) {
+            try {
+                window.location.href = upiLink;
+                this.setupPaymentCompletionCheck(validAmount, type);
+            } catch (e) {
+                console.error('UPI redirect failed:', e);
+                this.showManualPaymentInstructions(validAmount);
+            }
         }
-        
-        // Set up payment completion check
-        this.setupPaymentCompletionCheck(amount, type);
     }
     
-    // Show payment confirmation dialog
-    showPaymentConfirmation(amount, type) {
-        const message = `You will be redirected to your UPI app to pay ₹${amount} to ${this.merchantName}.\n\nUPI ID: ${this.adminUPI}\nAmount: ₹${amount}\n\nProceed with payment?`;
+    // Redirect to Paytm web
+    redirectToPaytm(amount, type) {
+        const validAmount = parseFloat(amount) || 0;
         
-        if (!confirm(message)) {
-            return false;
+        console.log('Redirecting to Paytm with amount:', validAmount);
+        
+        if (validAmount <= 0) {
+            this.showMessage('Invalid amount for Paytm payment', 'error');
+            return;
         }
         
-        return true;
+        const paytmLink = this.generatePaytmLink(validAmount);
+        
+        if (!paytmLink) {
+            this.showMessage('Failed to generate Paytm link', 'error');
+            return;
+        }
+        
+        // Store payment details for confirmation
+        const paymentData = {
+            amount: validAmount,
+            type: type,
+            timestamp: new Date().toISOString(),
+            upiId: this.adminUPI,
+            method: 'Paytm'
+        };
+        
+        sessionStorage.setItem('pendingPayment', JSON.stringify(paymentData));
+        
+        // Show confirmation and redirect
+        const confirmed = confirm(`You will be redirected to Paytm to pay ₹${validAmount} to ${this.merchantName}.\n\nPhone: 7893059116\nAmount: ₹${validAmount}\n\nProceed with payment?`);
+        
+        if (confirmed) {
+            try {
+                window.open(paytmLink, '_blank');
+                this.setupPaymentCompletionCheck(validAmount, type);
+            } catch (e) {
+                console.error('Paytm redirect failed:', e);
+                this.showManualPaymentInstructions(validAmount);
+            }
+        }
     }
     
-    // Show manual payment instructions if UPI redirect fails
+    // Show manual payment instructions
     showManualPaymentInstructions(amount) {
-        const instructions = `
-            <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #4a7c59; margin-bottom: 15px;">Manual Payment Instructions</h3>
-                <p><strong>UPI ID:</strong> ${this.adminUPI}</p>
-                <p><strong>Amount:</strong> ₹${amount}</p>
-                <p><strong>Merchant Name:</strong> ${this.merchantName}</p>
-                <p style="margin-top: 15px; color: #666;">
-                    Please open your UPI app manually and send the payment to the above UPI ID.
-                </p>
-            </div>
-        `;
+        const validAmount = parseFloat(amount) || 0;
         
-        // Create modal or show in existing payment modal
-        this.showMessage(instructions, 'info', true);
+        const instructions = `Manual Payment Instructions:
+        
+UPI ID: ${this.adminUPI}
+Phone: 7893059116
+Amount: ₹${validAmount}
+Merchant: ${this.merchantName}
+
+Please open your UPI app manually and send the payment to the above details.`;
+        
+        alert(instructions);
+        this.setupPaymentCompletionCheck(validAmount, 'manual');
     }
     
     // Setup payment completion check
     setupPaymentCompletionCheck(amount, type) {
+        const validAmount = parseFloat(amount) || 0;
+        
+        console.log('Setting up payment completion check for amount:', validAmount);
+        
         // Check after 10 seconds if user completed payment
         setTimeout(() => {
-            const confirmed = confirm(`Have you completed the payment of ₹${amount}?\n\nClick OK if payment is successful\nClick Cancel to try again`);
+            const confirmed = confirm(`Have you completed the payment of ₹${validAmount}?\n\nClick OK if payment is successful\nClick Cancel to try again`);
             
             if (confirmed) {
-                this.handlePaymentSuccess(amount, type);
+                this.handlePaymentSuccess(validAmount, type);
             } else {
                 this.handlePaymentFailure();
             }
@@ -145,8 +261,12 @@ class UPIPaymentSystem {
     
     // Handle successful payment
     handlePaymentSuccess(amount, type) {
+        const validAmount = parseFloat(amount) || 0;
+        
+        console.log('Processing successful payment:', validAmount, type);
+        
         const paymentData = {
-            amount: amount,
+            amount: validAmount,
             type: type,
             status: 'completed',
             paymentMethod: 'UPI',
@@ -169,6 +289,7 @@ class UPIPaymentSystem {
     
     // Handle payment failure
     handlePaymentFailure() {
+        console.log('Payment failed or cancelled');
         this.showMessage('Payment was not completed. Please try again.', 'error');
         sessionStorage.removeItem('pendingPayment');
     }
@@ -176,6 +297,8 @@ class UPIPaymentSystem {
     // Process order completion
     processOrderCompletion(paymentData) {
         try {
+            console.log('Processing order completion:', paymentData);
+            
             // Save order to localStorage or send to server
             const orders = JSON.parse(localStorage.getItem('orders') || '[]');
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -207,6 +330,8 @@ class UPIPaymentSystem {
     // Process donation completion
     processDonationCompletion(paymentData) {
         try {
+            console.log('Processing donation completion:', paymentData);
+            
             // Get donor name from session storage
             const donorName = sessionStorage.getItem('donorName') || 'Anonymous Donor';
             
@@ -243,16 +368,25 @@ class UPIPaymentSystem {
     overrideExistingPaymentFunctions() {
         // Override proceedToCheckout function
         window.proceedToCheckout = () => {
+            console.log('proceedToCheckout called');
             this.processCartPayment();
         };
         
         // Override donation payment function
         window.processDonationPayment = (amount) => {
+            console.log('processDonationPayment called with amount:', amount);
             this.processDonationPayment(amount);
+        };
+        
+        // Create openUPIPayment function
+        window.openUPIPayment = (amount, type = 'order') => {
+            console.log('openUPIPayment called with amount:', amount, 'type:', type);
+            this.openUPIPayment(amount, type);
         };
         
         // Override any existing UPI payment handlers
         window.handleUpiPayment = (amount, type = 'order') => {
+            console.log('handleUpiPayment called with amount:', amount, 'type:', type);
             if (type === 'donation') {
                 this.processDonationPayment(amount);
             } else {
@@ -276,11 +410,14 @@ class UPIPaymentSystem {
     
     // Update payment buttons to use new UPI system
     updatePaymentButtons() {
+        console.log('Updating payment buttons');
+        
         // Update cart checkout buttons
         const checkoutButtons = document.querySelectorAll('[onclick*="proceedToCheckout"], .checkout-btn, .checkout-btn-mobile');
         checkoutButtons.forEach(button => {
             button.onclick = (e) => {
                 e.preventDefault();
+                console.log('Checkout button clicked');
                 this.processCartPayment();
             };
         });
@@ -291,9 +428,11 @@ class UPIPaymentSystem {
             if (button.closest('form') && button.closest('form').id === 'donation-form') {
                 button.onclick = (e) => {
                     e.preventDefault();
+                    console.log('Donation button clicked');
                     const form = button.closest('form');
                     const amountInput = form.querySelector('input[name="amount"], #donation-amount');
                     const amount = parseFloat(amountInput?.value) || 0;
+                    console.log('Donation amount from form:', amount);
                     this.processDonationPayment(amount);
                 };
             }
@@ -301,22 +440,17 @@ class UPIPaymentSystem {
     }
     
     // Show message to user
-    showMessage(message, type = 'info', isHTML = false) {
+    showMessage(message, type = 'info') {
+        console.log('Showing message:', message, 'Type:', type);
+        
         // Try to use existing toast function
         if (typeof showToast === 'function') {
             showToast(message, type);
             return;
         }
         
-        // Fallback to alert for HTML content or simple messages
-        if (isHTML) {
-            // Create a temporary div to show HTML content
-            const div = document.createElement('div');
-            div.innerHTML = message;
-            alert(div.textContent || div.innerText);
-        } else {
-            alert(message);
-        }
+        // Fallback to alert
+        alert(message);
     }
     
     // Get current cart total for display
@@ -338,15 +472,23 @@ class UPIPaymentSystem {
 }
 
 // Initialize UPI Payment System
+console.log('Initializing UPI Payment System...');
 window.upiPaymentSystem = new UPIPaymentSystem();
 
 // Make functions available globally for backward compatibility
 window.processUPIPayment = (amount, type = 'order') => {
+    console.log('Global processUPIPayment called:', amount, type);
     if (type === 'donation') {
         window.upiPaymentSystem.processDonationPayment(amount);
     } else {
         window.upiPaymentSystem.processCartPayment();
     }
+};
+
+// Global openUPIPayment function
+window.openUPIPayment = (amount, type = 'order') => {
+    console.log('Global openUPIPayment called:', amount, type);
+    window.upiPaymentSystem.openUPIPayment(amount, type);
 };
 
 console.log('UPI Payment System loaded successfully');

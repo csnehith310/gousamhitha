@@ -1,4 +1,4 @@
-# Error Fixes - Profile Handler
+![alt text](image.png)# Error Fixes - Profile Handler
 
 ## Issue Fixed
 **Error**: "Cannot read properties of undefined (reading 'getUser')"
