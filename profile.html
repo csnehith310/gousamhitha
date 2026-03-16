@@ -440,8 +440,27 @@
     </nav>
 
     <!-- Scripts -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Fallback CDN loading for Supabase
+        function loadSupabaseWithFallback() {
+            const script1 = document.createElement('script');
+            script1.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            script1.onerror = function() {
+                console.log('Primary CDN failed, trying fallback...');
+                const script2 = document.createElement('script');
+                script2.src = 'https://unpkg.com/@supabase/supabase-js@2';
+                script2.onerror = function() {
+                    console.error('All CDNs failed. Profile functionality may not work.');
+                    document.getElementById('loading').innerHTML = '<p style="color: red;">Network error. Please check your internet connection and refresh the page.</p>';
+                };
+                document.head.appendChild(script2);
+            };
+            document.head.appendChild(script1);
+        }
+        loadSupabaseWithFallback();
+    </script>
     <script src="js/supabase-client.js?v=11"></script>
+    <script src="js/profile-error-fix.js"></script>
     <script src="js/supabase-auth.js?v=6"></script>
     <script src="js/bottom-nav.js"></script>
     <script src="profile-supabase.js"></script>
