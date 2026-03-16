@@ -255,6 +255,7 @@
     </div>
 
     <script src="payment.js"></script>
+    <script src="js/upi-payment-system.js"></script>
     <!-- Supabase configuration - MUST load in this exact order -->
     <script src="./config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -283,19 +284,30 @@
             const amount = parseFloat(document.getElementById('donation-amount').value);
             
             if (!name || !amount || amount <= 0) {
-                showToast('Please enter valid details', 'error');
+                if (typeof showToast === 'function') {
+                    showToast('Please enter valid details', 'error');
+                } else {
+                    alert('Please enter valid details');
+                }
                 return;
             }
             
             closeDonationForm();
             
-            const donationData = {
-                name: name,
-                amount: amount
-            };
+            // Store donor name for completion
+            sessionStorage.setItem('donorName', name);
             
-            // Open payment modal
-            openDonationPayment(donationData);
+            // Use new UPI payment system
+            if (window.upiPaymentSystem) {
+                window.upiPaymentSystem.processDonationPayment(amount);
+            } else {
+                // Fallback to old system
+                const donationData = {
+                    name: name,
+                    amount: amount
+                };
+                openDonationPayment(donationData);
+            }
         }
     </script>
     <script src="js/toast.js"></script>
