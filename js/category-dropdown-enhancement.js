@@ -1,9 +1,59 @@
-// Category Dropdown Enhancement - Pure Hover Dropdown, No Scroll
+// Category Navigation - Simple Links Only (No Dropdowns)
 document.addEventListener('DOMContentLoaded', function() {
     const categoryNav = document.querySelector('.shop-category-nav');
     const categoryItems = document.querySelectorAll('.category-item');
     
     if (!categoryNav || !categoryItems.length) return;
+    
+    console.log('🏷️ Initializing simple category navigation (no dropdowns)...');
+    
+    // Remove any existing dropdown elements
+    function removeDropdowns() {
+        const dropdowns = document.querySelectorAll('.category-dropdown');
+        dropdowns.forEach(dropdown => {
+            dropdown.remove();
+        });
+        console.log('✅ Removed', dropdowns.length, 'dropdown elements');
+    }
+    
+    // Ensure category links work as simple navigation
+    function setupSimpleNavigation() {
+        categoryItems.forEach(item => {
+            const link = item.querySelector('.category-link');
+            if (!link) return;
+            
+            // Remove any hover event listeners that might show dropdowns
+            const newLink = link.cloneNode(true);
+            link.parentNode.replaceChild(newLink, link);
+            
+            // Add simple click handler for category filtering
+            newLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all links
+                document.querySelectorAll('.category-link').forEach(l => {
+                    l.classList.remove('active');
+                });
+                
+                // Add active class to clicked link
+                newLink.classList.add('active');
+                
+                // Extract category from URL and filter
+                const url = new URL(newLink.href);
+                const category = url.searchParams.get('category');
+                
+                if (category && window.categoryFilterSystem) {
+                    window.categoryFilterSystem.filterByCategory(category);
+                    window.categoryFilterSystem.updateURL(category);
+                } else {
+                    // Fallback: navigate to the URL
+                    window.location.href = newLink.href;
+                }
+            });
+        });
+        
+        console.log('✅ Simple navigation setup complete');
+    }
     
     // Ensure no horizontal scroll
     function preventHorizontalScroll() {
@@ -20,100 +70,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Enhanced dropdown positioning
-    function positionDropdowns() {
-        categoryItems.forEach((item, index) => {
-            const dropdown = item.querySelector('.category-dropdown');
-            if (!dropdown) return;
-            
-            // For items on the right side, align dropdown to the right
-            if (index >= Math.floor(categoryItems.length / 2)) {
-                dropdown.style.left = 'auto';
-                dropdown.style.right = '0';
-                dropdown.style.transform = 'translateX(0)';
-            } else {
-                dropdown.style.left = '50%';
-                dropdown.style.right = 'auto';
-                dropdown.style.transform = 'translateX(-50%)';
-            }
-        });
-    }
-    
-    // Smooth hover effects
-    function enhanceHoverEffects() {
-        categoryItems.forEach(item => {
-            const link = item.querySelector('.category-link');
-            const dropdown = item.querySelector('.category-dropdown');
-            
-            if (!link || !dropdown) return;
-            
-            let hoverTimeout;
-            
-            // Mouse enter
-            item.addEventListener('mouseenter', () => {
-                clearTimeout(hoverTimeout);
-                dropdown.style.display = 'block';
-                
-                // Small delay for smooth animation
-                setTimeout(() => {
-                    dropdown.style.opacity = '1';
-                    dropdown.style.visibility = 'visible';
-                    dropdown.style.transform = dropdown.style.transform.replace('translateY(-10px)', 'translateY(0)');
-                }, 10);
-            });
-            
-            // Mouse leave
-            item.addEventListener('mouseleave', () => {
-                dropdown.style.opacity = '0';
-                dropdown.style.visibility = 'hidden';
-                dropdown.style.transform = dropdown.style.transform.replace('translateY(0)', 'translateY(-10px)');
-                
-                // Hide after animation completes
-                hoverTimeout = setTimeout(() => {
-                    dropdown.style.display = 'none';
-                }, 300);
-            });
-            
-            // Prevent dropdown from closing when hovering over it
-            dropdown.addEventListener('mouseenter', () => {
-                clearTimeout(hoverTimeout);
-            });
-            
-            dropdown.addEventListener('mouseleave', () => {
-                dropdown.style.opacity = '0';
-                dropdown.style.visibility = 'hidden';
-                dropdown.style.transform = dropdown.style.transform.replace('translateY(0)', 'translateY(-10px)');
-                
-                hoverTimeout = setTimeout(() => {
-                    dropdown.style.display = 'none';
-                }, 300);
-            });
-        });
-    }
-    
-    // Handle window resize
-    function handleResize() {
-        positionDropdowns();
-        preventHorizontalScroll();
-    }
-    
     // Initialize
+    removeDropdowns();
+    setupSimpleNavigation();
     preventHorizontalScroll();
-    positionDropdowns();
-    enhanceHoverEffects();
     
-    // Handle resize
-    window.addEventListener('resize', handleResize);
-    
-    // Ensure dropdowns are hidden initially
-    categoryItems.forEach(item => {
-        const dropdown = item.querySelector('.category-dropdown');
-        if (dropdown) {
-            dropdown.style.display = 'none';
-            dropdown.style.opacity = '0';
-            dropdown.style.visibility = 'hidden';
-        }
-    });
-    
-    console.log('Category dropdown enhancement initialized');
+    console.log('✅ Simple category navigation initialized (no dropdowns)');
 });

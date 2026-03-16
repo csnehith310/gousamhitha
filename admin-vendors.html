@@ -17,6 +17,7 @@
     
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/loading-fix-enhanced.js"></script>
     <script src="js/supabase-client.js?v=11"></script>
     <script src="js/admin-mobile.js"></script>
     <script src="js/admin-mobile-table-fix.js"></script>
@@ -125,7 +126,12 @@
         let vendorChannel = null;
 
         // Wait for Supabase to be ready
+        let isInitialized = false;
+        
         window.addEventListener('supabaseReady', async () => {
+            if (isInitialized) return;
+            isInitialized = true;
+            
             console.log('✅ Supabase ready, loading vendors...');
             await loadVendors();
             setupRealtimeSubscription();
@@ -133,7 +139,8 @@
         
         // Also try after a delay
         setTimeout(async () => {
-            if (window.supabase) {
+            if (window.supabase && !isInitialized) {
+                isInitialized = true;
                 await loadVendors();
                 setupRealtimeSubscription();
             }
@@ -156,6 +163,14 @@
 
         async function loadVendors() {
             const tbody = document.getElementById('vendors-table-body');
+            
+            // Check if already loading to prevent duplicates
+            if (tbody.dataset.loading === 'true') {
+                console.log('🚫 Vendors already loading, skipping...');
+                return;
+            }
+            
+            tbody.dataset.loading = 'true';
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading vendors...</td></tr>';
             
             try {
@@ -174,6 +189,8 @@
             } catch (error) {
                 console.error('Error loading vendors:', error);
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #d32f2f;">Error loading vendors</td></tr>';
+            } finally {
+                tbody.dataset.loading = 'false';
             }
         }
 
