@@ -31,22 +31,25 @@
     async function loadAdminDataInstantly() {
         console.log('🚀 Loading admin data instantly...');
         
+        // Always show loading state first
+        updateDashboardCards('loading');
+        
         // Check persistent cache first
         if (window.AdminCache && window.AdminCache.isValid()) {
             const cachedData = window.AdminCache.get();
             if (cachedData) {
                 console.log('⚡ Using persistent cache - instant load!');
-                updateDashboardCards('success', cachedData);
-                updateVendorsTable(cachedData.vendors, cachedData.products);
-                updateRecentOrders(cachedData.orders);
+                // Small delay to show loading dots briefly
+                setTimeout(() => {
+                    updateDashboardCards('success', cachedData);
+                    updateVendorsTable(cachedData.vendors, cachedData.products);
+                    updateRecentOrders(cachedData.orders);
+                }, 100);
                 return; // Exit early with cached data
             }
         }
         
         try {
-            // Show loading state immediately
-            updateDashboardCards('loading');
-            
             // Load all data in parallel for maximum speed
             const [productsResult, vendorsResult, ordersResult] = await Promise.all([
                 window.supabase.from('products').select('*'),

@@ -18,9 +18,11 @@
     
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/zero-delay-supabase.js"></script>
     <script src="js/supabase-client.js?v=11"></script>
+    <script src="js/persistent-admin-cache.js"></script>
+    <script src="js/ultra-fast-products.js"></script>
     <script src="js/loading-fix-enhanced.js"></script>
-    <script src="js/simple-products-fix.js"></script>
     <script src="js/supabase-client.js?v=11"></script>
     <script src="js/clear-console-errors.js"></script>
     <script src="js/admin-mobile.js"></script>
@@ -185,8 +187,8 @@
             if (isInitialized) return;
             isInitialized = true;
             
-            console.log('✅ Supabase ready, loading products...');
-            await loadProducts();
+            console.log('✅ Supabase ready, ultra-fast products will load...');
+            // Ultra-fast products loader will handle this automatically
             await loadVendorsForDropdown();
             setupRealtimeSubscription();
         });
@@ -195,11 +197,18 @@
         setTimeout(async () => {
             if (window.supabase && !isInitialized) {
                 isInitialized = true;
-                await loadProducts();
+                // Ultra-fast products loader will handle this automatically
                 await loadVendorsForDropdown();
                 setupRealtimeSubscription();
             }
         }, 1000);
+        
+        // Override loadProducts to use ultra-fast loader
+        window.loadProducts = function() {
+            if (window.loadProductsUltraFast) {
+                return window.loadProductsUltraFast();
+            }
+        };
                 await loadVendorsForDropdown();
                 setupRealtimeSubscription();
             }
