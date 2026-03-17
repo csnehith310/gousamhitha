@@ -567,8 +567,14 @@ class MobileCartHandler {
     }
     
     setupStickyTotalBar() {
+        // Mobile cart total bar disabled - skip setup
         const stickyBar = document.getElementById('mobile-cart-total');
         const cartItems = document.querySelectorAll('.cart-item');
+        
+        // Skip if sticky bar doesn't exist (removed)
+        if (!stickyBar) {
+            return;
+        }
         
         if (cartItems.length > 0 && stickyBar) {
             stickyBar.style.display = 'block';
@@ -579,10 +585,16 @@ class MobileCartHandler {
     }
     
     updateStickyTotalBar() {
+        // Mobile cart total bar disabled - skip update
         const cartItems = document.querySelectorAll('.cart-item');
         const totalItemsElement = document.getElementById('mobile-total-items');
         const totalPriceElement = document.getElementById('mobile-total-price');
         const totalSavingsElement = document.getElementById('mobile-total-savings');
+        
+        // Skip if mobile elements don't exist (bar removed)
+        if (!totalItemsElement || !totalPriceElement || !totalSavingsElement) {
+            return;
+        }
         
         let totalItems = 0;
         let totalPrice = 0;

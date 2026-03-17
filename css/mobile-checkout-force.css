@@ -2,11 +2,13 @@
 
 /* Mobile devices only */
 @media screen and (max-width: 768px) {
-    /* Force mobile cart total bar to be visible ABOVE bottom navigation */
+    /* Force mobile cart total bar to be visible ABOVE bottom navigation - DISABLED */
+    /*
     .mobile-cart-total-bar,
     #mobile-cart-total {
         display: block !important;
         visibility: visible !important;
+    */
         opacity: 1 !important;
         position: fixed !important;
         bottom: 70px !important; /* Position above 70px bottom navigation */
@@ -59,13 +61,15 @@
     }
 }
 
-/* Desktop - hide mobile elements */
+/* Desktop - hide mobile elements - DISABLED */
 @media screen and (min-width: 769px) {
+    /*
     .mobile-cart-total-bar,
     #mobile-cart-total,
     .fallback-mobile-checkout {
         display: none !important;
     }
+    */
     
     body {
         padding-bottom: 0 !important;
@@ -93,8 +97,10 @@
         display: block;
     }
     
-    /* Hide the CSS fallback if real button exists */
+    /* Hide the CSS fallback if real button exists - DISABLED */
+    /*
     .mobile-cart-total-bar ~ .cart-container::after {
         display: none;
     }
+    */
 }

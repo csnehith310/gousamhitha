@@ -265,7 +265,13 @@ if (!window.updateProfileUI) {
                     mobileProfileBtn.appendChild(indicator);
                 }
                 
-                console.log('✅ Profile UI updated - User logged in as:', displayName);
+                // Reduce console spam for profile updates
+                if (!window.profileUpdateLogCount) window.profileUpdateLogCount = 0;
+                window.profileUpdateLogCount++;
+                
+                if (window.profileUpdateLogCount % 10 === 1) {
+                    console.log('✅ Profile UI updated - User logged in as:', displayName);
+                }
             } else {
                 console.log('ℹ️ User not logged in, showing default profile icons');
                 if (profileBtn) window.showDefaultProfileIcon(profileBtn);

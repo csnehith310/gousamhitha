@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="css/working-cart-selection.css">
     <link rel="stylesheet" href="css/mobile-checkout-force.css">
     <link rel="stylesheet" href="css/real-search-styles.css">
+    <link rel="stylesheet" href="css/cart-button.css">
+    <link rel="stylesheet" href="css/cart-buttons-fix.css">
     <script src="js/back-button.js"></script>
     <script src="js/upi-payment-system.js"></script>
     <script src="js/disable-select-all.js"></script>
@@ -55,6 +57,17 @@
                             </svg>
                         </div>
                     </a>
+                    
+                    <!-- Cart Button (Current Page) -->
+                    <div class="nav-item cart-btn current-page" style="display: flex !important; align-items: center; gap: 8px; padding: 8px 12px; background: #6c757d; color: white; border-radius: 8px; font-weight: 500; opacity: 0.8;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                        <span class="cart-text">Cart</span>
+                        <span class="cart-count-badge" id="nav-cart-count" style="background: #fff; color: #6c757d; padding: 2px 6px; border-radius: 10px; font-size: 12px; font-weight: 600; min-width: 18px; text-align: center;">0</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -152,20 +165,6 @@
     <!-- Fallback Mobile Checkout Button (always visible) -->
     <div class="fallback-mobile-checkout" id="fallback-checkout" style="display: none;">
         <button class="checkout-btn-mobile" onclick="proceedToCheckout()">
-            Proceed to Checkout
-        </button>
-    </div>
-
-    <!-- Mobile Sticky Cart Total Bar -->
-    <div class="mobile-cart-total-bar" id="mobile-cart-total" style="display: block !important; position: fixed; bottom: 70px; left: 0; right: 0; z-index: 1001; background: white; border-top: 1px solid #e0e0e0; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); padding: 16px;">
-        <div class="cart-total-content">
-            <div class="cart-total-left">
-                <div class="cart-total-items" id="mobile-total-items">Loading items...</div>
-                <div class="cart-total-price" id="mobile-total-price">₹0.00</div>
-                <div class="cart-total-savings" id="mobile-total-savings">Calculating savings...</div>
-            </div>
-        </div>
-        <button class="checkout-btn-mobile" onclick="proceedToCheckout()" style="width: 100%; background: #4a7c59; color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px;">
             Proceed to Checkout
         </button>
     </div>
@@ -277,18 +276,23 @@
     <!-- Supabase Scripts -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js?v=11"></script>
+    
+    <!-- Performance Optimization System V2 -->
+    <script src="js/performance-master-v2.js"></script>
+    
     <script src="js/supabase-auth.js?v=7"></script>
     <script src="js/profile-handler.js?v=8"></script>
     <script src="js/toast.js"></script>
     <script src="js/page-detector.js"></script>
     <script src="js/bottom-nav.js"></script>
     <script src="js/mobile-menu.js?v=2"></script>
-    <script src="js/cart-handler.js?v=2"></script>
+    
+    <!-- Cart Error Fix -->
+    <script src="js/cart-count-updater.js"></script>
+    
+    <!-- Clean Cart System - Simple and reliable -->
+    <script src="js/clean-cart-system.js"></script>
+    
     <script src="js/mobile-cart-handler.js"></script>
-    <script src="js/selective-checkout.js"></script>
-    <script src="js/enhanced-cart-system.js"></script>
-    <script src="js/mobile-checkout-fix.js"></script>
-    <script src="js/working-cart-selection.js"></script>
-    <script src="js/remove-select-all.js"></script>
 </body>
 </html>

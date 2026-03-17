@@ -48,7 +48,14 @@ class WorkingCartSelection {
                     console.log(`📦 Found ${cartItems.length} cart items`);
                     resolve();
                 } else {
-                    console.log('⏳ Waiting for cart items to load...');
+                    // Reduce console spam - only log every 5th attempt
+                    if (!window.cartWaitLogCount) window.cartWaitLogCount = 0;
+                    window.cartWaitLogCount++;
+                    
+                    if (window.cartWaitLogCount % 5 === 0) {
+                        console.log(`⏳ Waiting for cart items to load... (attempt ${window.cartWaitLogCount})`);
+                    }
+                    
                     setTimeout(checkForItems, 500);
                 }
             };
@@ -220,9 +227,15 @@ class WorkingCartSelection {
     }
     
     updateSelectionDisplay() {
+        // Mobile cart total bar disabled - skip mobile elements
         const mobileItemsElement = document.getElementById('mobile-total-items');
         const mobilePriceElement = document.getElementById('mobile-total-price');
         const mobileSavingsElement = document.getElementById('mobile-total-savings');
+        
+        // Skip if mobile elements don't exist (bar removed)
+        if (!mobileItemsElement || !mobilePriceElement || !mobileSavingsElement) {
+            return;
+        }
         
         const totalItems = document.querySelectorAll('.cart-item').length;
         

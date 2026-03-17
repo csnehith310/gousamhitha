@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/real-search-styles.css">
     <link rel="stylesheet" href="css/category-dropdown-fix.css">
     <link rel="stylesheet" href="css/category-nav-simple.css">
+    <link rel="stylesheet" href="css/cart-button.css">
     <script src="js/database-search-engine.js"></script>
     <script src="js/category-filter-system.js"></script>
     <script src="js/back-button.js"></script>
@@ -24,6 +25,9 @@
     
     <!-- Supabase Client Configuration -->
     <script src="js/supabase-client.js?v=11"></script>
+    
+    <!-- Performance Optimization System V2 -->
+    <script src="js/performance-master-v2.js"></script>
 </head>
 <body>
     
@@ -60,6 +64,17 @@
                                 <path d="M6.5 18.5C7.5 16.5 9.5 15 12 15C14.5 15 16.5 16.5 17.5 18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                         </div>
+                    </a>
+                    
+                    <!-- Cart Button -->
+                    <a href="cart.html" class="nav-item cart-btn" id="cart-btn" style="display: flex !important; align-items: center; gap: 8px; padding: 8px 12px; background: #4a7c59; color: white; border-radius: 8px; text-decoration: none; font-weight: 500; transition: all 0.3s ease;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                        <span class="cart-text">Cart</span>
+                        <span class="cart-count-badge" id="nav-cart-count" style="background: #fff; color: #4a7c59; padding: 2px 6px; border-radius: 10px; font-size: 12px; font-weight: 600; min-width: 18px; text-align: center;">0</span>
                     </a>
                     
                     
@@ -332,6 +347,7 @@
     <script src="js/page-detector.js"></script>
     <script src="js/bottom-nav.js"></script>
     <script src="js/mobile-menu.js?v=2"></script>
+    <script src="js/cart-count-updater.js"></script>
     
     <script>
         // Initialize search results display on shop page

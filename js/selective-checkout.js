@@ -180,9 +180,15 @@ class SelectiveCheckoutHandler {
     }
     
     updateMobileTotalBar(itemCount, totalPrice) {
+        // Mobile cart total bar disabled - skip update
         const totalItemsElement = document.getElementById('mobile-total-items');
         const totalPriceElement = document.getElementById('mobile-total-price');
         const totalSavingsElement = document.getElementById('mobile-total-savings');
+        
+        // Skip if mobile elements don't exist (bar removed)
+        if (!totalItemsElement || !totalPriceElement || !totalSavingsElement) {
+            return;
+        }
         
         if (totalItemsElement) {
             totalItemsElement.textContent = `${itemCount} item${itemCount !== 1 ? 's' : ''} selected`;

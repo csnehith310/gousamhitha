@@ -5,10 +5,15 @@
     function ensureMobileCheckoutButton() {
         console.log('🔧 Ensuring mobile checkout button is visible...');
         
-        // Force show mobile cart total bar on mobile devices
+        // Force show mobile cart total bar on mobile devices - DISABLED
         if (window.innerWidth <= 768) {
             const mobileCartTotal = document.getElementById('mobile-cart-total');
             const fallbackCheckout = document.getElementById('fallback-checkout');
+            
+            // Skip if mobile cart total doesn't exist (removed)
+            if (!mobileCartTotal) {
+                return;
+            }
             
             // Show the main mobile cart total bar ABOVE bottom navigation
             if (mobileCartTotal) {

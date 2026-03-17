@@ -170,11 +170,13 @@
     }
 }
 
-/* Sticky Cart Total Bar - More Compact */
+/* Sticky Cart Total Bar - More Compact - DISABLED */
 @media (max-width: 768px) {
+    /*
     .mobile-cart-total-bar {
         position: fixed;
         bottom: 0;
+    */
         left: 0;
         right: 0;
         background: white;
@@ -274,9 +276,11 @@
         padding: 0.2rem 0.4rem !important;
     }
     
+    /*
     .mobile-cart-total-bar {
         padding: 0.6rem 0.8rem !important;
     }
+    */
     
     .cart-total-price {
         font-size: 15px !important;
@@ -398,12 +402,14 @@
     }
 }
 
-/* Sticky Cart Total Bar - Mobile Only */
+/* Sticky Cart Total Bar - Mobile Only - DISABLED */
 @media (max-width: 768px) {
+    /*
     .mobile-cart-total-bar {
         position: fixed;
         bottom: 0;
         left: 0;
+    */
         right: 0;
         background: white;
         border-top: 1px solid #e0e0e0;
@@ -608,9 +614,11 @@
         font-size: 12px !important;
     }
     
+    /*
     .mobile-cart-total-bar {
         padding: 0.8rem !important;
     }
+    */
     
     .cart-total-price {
         font-size: 16px !important;
@@ -687,8 +695,9 @@
         height: 14px;
     }
 }
-/* Force mobile checkout button visibility */
+/* Force mobile checkout button visibility - DISABLED */
 @media (max-width: 768px) {
+    /*
     .mobile-cart-total-bar {
         display: block !important;
         visibility: visible !important;
@@ -708,11 +717,13 @@
     }
 }
 
-/* Hide on desktop */
+/* Hide on desktop - DISABLED */
 @media (min-width: 769px) {
+    /*
     .mobile-cart-total-bar {
         display: none !important;
     }
+    */
 }
 /* Fallback mobile checkout button */
 .fallback-mobile-checkout {

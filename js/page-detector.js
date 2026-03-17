@@ -72,7 +72,13 @@
             });
         });
         
-        console.log('🚫 Hamburger menu elements forcefully hidden/removed (profile icons preserved)');
+        // Reduce console spam for hamburger menu
+        if (!window.hamburgerHideLogCount) window.hamburgerHideLogCount = 0;
+        window.hamburgerHideLogCount++;
+        
+        if (window.hamburgerHideLogCount % 10 === 1) {
+            console.log('🚫 Hamburger menu elements forcefully hidden/removed (profile icons preserved)');
+        }
     }
     
     // Set page class immediately

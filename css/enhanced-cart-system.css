@@ -283,7 +283,8 @@
     }
 }
 
-/* Enhanced Mobile Sticky Bar */
+/* Enhanced Mobile Sticky Bar - DISABLED */
+/*
 .mobile-cart-total-bar {
     background: white;
     border-top: 1px solid #e0e0e0;
@@ -293,6 +294,7 @@
     bottom: 70px; /* Above bottom navigation */
     left: 0;
     right: 0;
+*/
     z-index: 1001; /* Higher than bottom nav */
     padding: 16px;
 }
