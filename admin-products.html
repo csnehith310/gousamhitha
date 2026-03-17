@@ -18,7 +18,9 @@
     
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js?v=11"></script>
     <script src="js/loading-fix-enhanced.js"></script>
+    <script src="js/simple-products-fix.js"></script>
     <script src="js/supabase-client.js?v=11"></script>
     <script src="js/clear-console-errors.js"></script>
     <script src="js/admin-mobile.js"></script>
@@ -194,6 +196,10 @@
             if (window.supabase && !isInitialized) {
                 isInitialized = true;
                 await loadProducts();
+                await loadVendorsForDropdown();
+                setupRealtimeSubscription();
+            }
+        }, 1000);
                 await loadVendorsForDropdown();
                 setupRealtimeSubscription();
             }

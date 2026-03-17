@@ -18,6 +18,7 @@
     
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/zero-delay-supabase.js"></script>
     <script src="js/supabase-client.js?v=11"></script>
     <script src="js/admin-scroll-emergency.js"></script>
     <script src="js/admin-mobile.js"></script>
@@ -144,8 +145,12 @@
         </div>
     </div>
     
-    <!-- Performance Optimizations -->
-    <script src="js/performance-loader.js"></script>
+    <!-- Persistent Admin Cache - Keep data across page navigation -->
+    <script src="js/persistent-admin-cache.js"></script>
+    <script src="js/admin-cache-invalidator.js"></script>
+    
+    <!-- Instant Admin Loader - Load real data within 1 second -->
+    <script src="js/instant-admin-loader.js"></script>
     
     <!-- Scripts -->
     <script src="js/loading-fix-enhanced.js"></script>
@@ -156,13 +161,13 @@
         // Wait for Supabase to be ready
         window.addEventListener('supabaseReady', async () => {
             console.log('✅ Supabase ready, loading dashboard...');
-            await loadDashboard();
+            // Admin fast loader will handle this automatically
         });
         
         // Also try after a delay
         setTimeout(async () => {
             if (window.supabase) {
-                await loadDashboard();
+                // Admin fast loader will handle this automatically
             }
         }, 1000);
     </script>
