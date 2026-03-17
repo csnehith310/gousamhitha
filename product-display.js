@@ -225,6 +225,12 @@ async function addToCart(productId, productName, price, maxStock) {
 
 // Load products when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Skip if optimizations are already loaded
+    if (window.optimizationsLoaded) {
+        console.log('⚡ Using optimized product display');
+        return;
+    }
+    
     console.log('DOM loaded, initializing product display...');
     
     // Wait for Supabase to be ready

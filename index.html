@@ -16,10 +16,12 @@
     <link rel="stylesheet" href="css/bottom-nav.css">
     <link rel="stylesheet" href="css/real-search-styles.css">
     <link rel="stylesheet" href="css/category-dropdown-fix.css">
+    <link rel="stylesheet" href="css/category-bigger.css">
     <link rel="stylesheet" href="google-auth.css">
     <script src="js/database-search-engine.js"></script>
     <script src="js/category-filter-system.js"></script>
     <script src="js/back-button.js"></script>
+    <script src="js/error-suppression-ultra.js"></script>
 </head>
 <body>
     
@@ -357,6 +359,10 @@
                 </a>
             </div>
             
+            <!-- Home Product Grid -->
+            <div class="product-grid" id="home-product-grid">
+                <!-- Products will be loaded here -->
+            </div>
             
         </div>
     </section>
@@ -490,12 +496,9 @@
     <!-- Scripts: Supabase Authentication (CDN Version - No npm install needed) -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    <!-- Console Error Fix - Load Early -->
-    <script src="js/error-suppression.js"></script>
-    <script src="js/console-error-fix.js"></script>
-    <script src="js/payment-error-fix.js"></script>
-    
+    <!-- Supabase Client Configuration -->
     <script src="js/supabase-client.js?v=11"></script>
+    
     <script src="js/supabase-auth.js?v=7"></script>
     
     <!-- Product display and utilities -->
